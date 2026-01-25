@@ -1,79 +1,94 @@
-'use client'
+"use client";
 
-import { useEffect, useState, useCallback } from 'react'
-import Link from 'next/link'
-import { useParams, useRouter } from 'next/navigation'
+import { useEffect, useState, useCallback } from "react";
+import Link from "next/link";
+import { useParams, useRouter } from "next/navigation";
 
-import { getTripById, deleteTrip } from '@/lib/supabase/queries'
-import { TripMap } from '@/components/map/trip-map'
-import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
-import { Card, CardContent } from '@/components/ui/card'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { getTripById, deleteTrip } from "@/lib/supabase/queries";
+import { TripMap } from "@/components/map/trip-map";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   formatDistance,
   formatDuration,
   type RouteResult,
-} from '@/lib/mapbox/directions'
-import type { Stop } from '@/lib/sanity/types'
+} from "@/lib/mapbox/directions";
+
+interface MapStop {
+  _id: string;
+  name: string;
+  type: "campsite" | "city" | "attraction" | "rest" | "event" | "transport";
+  location: {
+    _type: "geopoint";
+    lat: number;
+    lng: number;
+  };
+  country?: string;
+  arrivalDate?: string;
+  departureDate?: string;
+  nights?: number;
+  notes?: string;
+}
 
 interface SupabaseTrip {
-  id: string
-  title: string
-  slug: string | null
-  description: string | null
-  start_date: string | null
-  end_date: string | null
-  status: 'planning' | 'booked' | 'in-progress' | 'completed'
-  max_driving_minutes: number
+  id: string;
+  title: string;
+  slug: string | null;
+  description: string | null;
+  start_date: string | null;
+  end_date: string | null;
+  status: "planning" | "booked" | "in-progress" | "completed";
+  max_driving_minutes: number;
   vehicles: {
-    name: string
-    make: string | null
-    model: string | null
-  } | null
+    name: string;
+    make: string | null;
+    model: string | null;
+  } | null;
   stops: Array<{
-    id: string
-    name: string
-    full_name: string | null
-    lat: number
-    lng: number
-    country: string | null
-    type: 'campsite' | 'city' | 'attraction' | 'rest' | 'event' | 'transport'
-    arrival_date: string | null
-    departure_date: string | null
-    nights: number
-    notes: string | null
-    position: number
-  }>
+    id: string;
+    name: string;
+    full_name: string | null;
+    lat: number;
+    lng: number;
+    country: string | null;
+    type: "campsite" | "city" | "attraction" | "rest" | "event" | "transport";
+    arrival_date: string | null;
+    departure_date: string | null;
+    nights: number;
+    notes: string | null;
+    position: number;
+  }>;
 }
 
 const STATUS_COLOURS: Record<string, string> = {
-  planning: 'bg-yellow-100 text-yellow-800',
-  booked: 'bg-blue-100 text-blue-800',
-  'in-progress': 'bg-green-100 text-green-800',
-  completed: 'bg-gray-100 text-gray-800',
-}
+  planning: "bg-yellow-100 text-yellow-800",
+  booked: "bg-blue-100 text-blue-800",
+  "in-progress": "bg-green-100 text-green-800",
+  completed: "bg-gray-100 text-gray-800",
+};
 
 const TYPE_COLOURS: Record<string, string> = {
-  campsite: 'bg-green-100 text-green-800',
-  city: 'bg-blue-100 text-blue-800',
-  attraction: 'bg-amber-100 text-amber-800',
-  rest: 'bg-violet-100 text-violet-800',
-  event: 'bg-red-100 text-red-800',
-  transport: 'bg-cyan-100 text-cyan-800',
-}
+  campsite: "bg-green-100 text-green-800",
+  city: "bg-blue-100 text-blue-800",
+  attraction: "bg-amber-100 text-amber-800",
+  rest: "bg-violet-100 text-violet-800",
+  event: "bg-red-100 text-red-800",
+  transport: "bg-cyan-100 text-cyan-800",
+};
 
 function formatDate(dateString: string | null): string {
-  if (!dateString) return ''
-  return new Date(dateString).toLocaleDateString('en-GB', {
-    day: 'numeric',
-    month: 'long',
-    year: 'numeric',
-  })
+  if (!dateString) return "";
+  return new Date(dateString).toLocaleDateString("en-GB", {
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  });
 }
 
 // Convert Supabase stops to the format expected by TripMap
-function convertStopsForMap(stops: SupabaseTrip['stops']): Stop[] {
+function convertStopsForMap(stops: SupabaseTrip["stops"]): MapStop[] {
   return stops
     .sort((a, b) => a.position - b.position)
     .map((stop) => ({
@@ -81,7 +96,7 @@ function convertStopsForMap(stops: SupabaseTrip['stops']): Stop[] {
       name: stop.name,
       type: stop.type,
       location: {
-        _type: 'geopoint' as const,
+        _type: "geopoint" as const,
         lat: stop.lat,
         lng: stop.lng,
       },
@@ -90,59 +105,59 @@ function convertStopsForMap(stops: SupabaseTrip['stops']): Stop[] {
       departureDate: stop.departure_date || undefined,
       nights: stop.nights,
       notes: stop.notes || undefined,
-    }))
+    }));
 }
 
 export default function TripPage() {
-  const params = useParams()
-  const router = useRouter()
-  const tripId = params.id as string
+  const params = useParams();
+  const router = useRouter();
+  const tripId = params.id as string;
 
-  const [trip, setTrip] = useState<SupabaseTrip | null>(null)
-  const [route, setRoute] = useState<RouteResult | null>(null)
-  const [loading, setLoading] = useState(true)
-  const [deleting, setDeleting] = useState(false)
+  const [trip, setTrip] = useState<SupabaseTrip | null>(null);
+  const [route, setRoute] = useState<RouteResult | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
     async function fetchTrip() {
       try {
-        const data = await getTripById(tripId)
-        setTrip(data as SupabaseTrip)
+        const data = await getTripById(tripId);
+        setTrip(data as SupabaseTrip);
       } catch (error) {
-        console.error('Error fetching trip:', error)
+        console.error("Error fetching trip:", error);
       } finally {
-        setLoading(false)
+        setLoading(false);
       }
     }
 
-    fetchTrip()
-  }, [tripId])
+    fetchTrip();
+  }, [tripId]);
 
   const handleRouteCalculated = useCallback((calculatedRoute: RouteResult) => {
-    setRoute(calculatedRoute)
-  }, [])
+    setRoute(calculatedRoute);
+  }, []);
 
   const handleDelete = useCallback(async () => {
-    if (!confirm('Are you sure you want to delete this trip?')) return
+    if (!confirm("Are you sure you want to delete this trip?")) return;
 
-    setDeleting(true)
+    setDeleting(true);
     try {
-      await deleteTrip(tripId)
-      router.push('/')
+      await deleteTrip(tripId);
+      router.push("/");
     } catch (error) {
-      console.error('Error deleting trip:', error)
-      alert('Failed to delete trip.')
+      console.error("Error deleting trip:", error);
+      alert("Failed to delete trip.");
     } finally {
-      setDeleting(false)
+      setDeleting(false);
     }
-  }, [tripId, router])
+  }, [tripId, router]);
 
   if (loading) {
     return (
       <div className="flex min-h-screen items-center justify-center">
         <p className="text-muted-foreground">Loading trip...</p>
       </div>
-    )
+    );
   }
 
   if (!trip) {
@@ -153,11 +168,11 @@ export default function TripPage() {
           <Button>Back to trips</Button>
         </Link>
       </div>
-    )
+    );
   }
 
-  const stops = convertStopsForMap(trip.stops)
-  const sortedStops = trip.stops.sort((a, b) => a.position - b.position)
+  const stops = convertStopsForMap(trip.stops);
+  const sortedStops = trip.stops.sort((a, b) => a.position - b.position);
 
   return (
     <div className="min-h-screen bg-background">
@@ -174,7 +189,7 @@ export default function TripPage() {
               disabled={deleting}
               className="text-destructive hover:bg-destructive hover:text-destructive-foreground"
             >
-              {deleting ? 'Deleting...' : 'Delete'}
+              {deleting ? "Deleting..." : "Delete"}
             </Button>
           </nav>
         </div>
@@ -237,7 +252,10 @@ export default function TripPage() {
               <CardContent className="p-3 text-center">
                 <p className="text-xs text-muted-foreground">Countries</p>
                 <p className="mt-1 font-semibold">
-                  {new Set(trip.stops.map((s) => s.country).filter(Boolean)).size}
+                  {
+                    new Set(trip.stops.map((s) => s.country).filter(Boolean))
+                      .size
+                  }
                 </p>
               </CardContent>
             </Card>
@@ -254,7 +272,10 @@ export default function TripPage() {
 
           <TabsContent value="map">
             <div className="h-[600px] overflow-hidden rounded-lg border">
-              <TripMap stops={stops} onRouteCalculated={handleRouteCalculated} />
+              <TripMap
+                stops={stops}
+                onRouteCalculated={handleRouteCalculated}
+              />
             </div>
           </TabsContent>
 
@@ -289,7 +310,7 @@ export default function TripPage() {
                     </div>
                     {stop.nights > 0 && (
                       <div className="text-right text-sm text-muted-foreground">
-                        {stop.nights} night{stop.nights > 1 ? 's' : ''}
+                        {stop.nights} night{stop.nights > 1 ? "s" : ""}
                       </div>
                     )}
                   </CardContent>
@@ -301,7 +322,10 @@ export default function TripPage() {
           <TabsContent value="both">
             <div className="grid gap-6 lg:grid-cols-2">
               <div className="h-[500px] overflow-hidden rounded-lg border">
-                <TripMap stops={stops} onRouteCalculated={handleRouteCalculated} />
+                <TripMap
+                  stops={stops}
+                  onRouteCalculated={handleRouteCalculated}
+                />
               </div>
               <div className="max-h-[500px] space-y-3 overflow-y-auto">
                 {sortedStops.map((stop, index) => (
@@ -335,5 +359,5 @@ export default function TripPage() {
         </Tabs>
       </main>
     </div>
-  )
+  );
 }

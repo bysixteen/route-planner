@@ -1,11 +1,11 @@
 # Route Planner - Project Instructions
 
 ## Project Overview
-Personal road trip planning tool for the Cork family. Built with Next.js 15, Sanity CMS, Mapbox, and Tailwind CSS.
+Personal road trip planning tool for the Cork family. Built with Next.js 15, Supabase, Mapbox, and Tailwind CSS.
 
 ## Tech Stack
 - **Framework:** Next.js 15 (App Router)
-- **CMS:** Sanity v3 with embedded Studio
+- **Database:** Supabase (PostgreSQL)
 - **Styling:** Tailwind CSS 4 + Shadcn/ui
 - **Maps:** Mapbox GL JS + Directions API
 - **Deployment:** Vercel
@@ -30,7 +30,7 @@ Personal road trip planning tool for the Cork family. Built with Next.js 15, San
 // 1. Imports
 import { useState } from 'react'
 import { Card } from '@/components/ui/card'
-import type { Trip } from '@/lib/sanity/types'
+import type { Trip } from '@/lib/types'
 
 // 2. Types (if component-specific)
 interface TripCardProps {
@@ -46,10 +46,10 @@ export function TripCard({ trip, onSelect }: TripCardProps) {
 }
 ```
 
-### Sanity Queries
-- Place all GROQ queries in `lib/sanity/queries.ts`
-- Use typed query results with Sanity TypeGen
-- Prefix query names: `tripQuery`, `allTripsQuery`, `stopsByTripQuery`
+### Supabase Queries
+- Place all database queries in `lib/supabase/queries.ts`
+- Use typed responses from `lib/supabase/types.ts`
+- Create client per-request with `createClient()`
 
 ### Mapbox
 - Store access token in `NEXT_PUBLIC_MAPBOX_TOKEN`
@@ -73,28 +73,24 @@ export function TripCard({ trip, onSelect }: TripCardProps) {
 ```
 app/           → Next.js pages and API routes
 components/    → React components (ui/, map/, trip/, export/)
-lib/           → Utilities (sanity/, mapbox/, utils/)
-sanity/        → Sanity Studio config and schemas
+lib/           → Utilities (supabase/, mapbox/, types.ts)
 public/        → Static assets
 ```
 
 ## Environment Variables Required
 ```env
-# Sanity
-NEXT_PUBLIC_SANITY_PROJECT_ID=
-NEXT_PUBLIC_SANITY_DATASET=production
-SANITY_API_READ_TOKEN=
-
 # Mapbox
 NEXT_PUBLIC_MAPBOX_TOKEN=
+
+# Supabase
+NEXT_PUBLIC_SUPABASE_URL=
+NEXT_PUBLIC_SUPABASE_ANON_KEY=
 ```
 
 ## Common Commands
 ```bash
 npm run dev          # Start development server
 npm run build        # Build for production
-npm run sanity       # Open Sanity Studio (if separate)
-npm run typegen      # Generate Sanity types
 ```
 
 ## Testing Checklist
