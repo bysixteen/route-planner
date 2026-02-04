@@ -98,14 +98,16 @@ function TripCard({ trip }: { trip: TripListItem }) {
 export default function HomePage() {
   const [trips, setTrips] = useState<TripListItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     async function fetchTrips() {
       try {
         const data = await getAllTrips();
         setTrips(data as TripListItem[]);
-      } catch (error) {
-        console.error("Error fetching trips:", error);
+      } catch (err) {
+        console.error("Error fetching trips:", err);
+        setError("Failed to load trips");
       } finally {
         setLoading(false);
       }
@@ -135,7 +137,11 @@ export default function HomePage() {
           </p>
         </div>
 
-        {loading ? (
+        {error ? (
+          <div className="rounded-lg border border-red-200 bg-red-50 p-6 text-center text-red-700">
+            {error}
+          </div>
+        ) : loading ? (
           <div className="py-12 text-center text-muted-foreground">
             Loading trips...
           </div>

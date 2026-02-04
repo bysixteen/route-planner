@@ -123,3 +123,18 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* Mapbox popup styling */
+.map-location-popup .mapboxgl-popup-content {
+  padding: 0;
+  border-radius: 0.5rem;
+  box-shadow: 0 10px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+}
+
+.map-location-popup .mapboxgl-popup-tip {
+  border-top-color: white;
+}
+
+.mapboxgl-popup-close-button {
+  display: none;
+}
