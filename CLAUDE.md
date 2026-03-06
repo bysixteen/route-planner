@@ -87,6 +87,16 @@ NEXT_PUBLIC_SUPABASE_URL=
 NEXT_PUBLIC_SUPABASE_ANON_KEY=
 ```
 
+## Environment Setup (New Worktrees)
+`.env.local` is gitignored and won't exist in new Conductor worktrees. The canonical copy lives at:
+```
+/Users/danielcork/Sites/by-sixteen/route-planner/.env.local
+```
+At the start of any new session, if `.env.local` is missing or has placeholder values, run:
+```bash
+cp /Users/danielcork/Sites/by-sixteen/route-planner/.env.local .env.local
+```
+
 ## Common Commands
 ```bash
 npm run dev          # Start development server

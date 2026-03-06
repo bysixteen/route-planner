@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sprint 002 — Trip Viewer Data Concepts: Information Architecture | Cork GP 2026</title>
+  <link rel="stylesheet" href="../../styles.css">
+  <style>
+    .sprint-hero {
+      padding: 0 0 24px;
+      border-bottom: 1px solid var(--colour-border);
+      margin-bottom: 24px;
+    }
+    .sprint-hero .sprint-label {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--colour-accent);
+      margin-bottom: 8px;
+    }
+    .sprint-hero h1 {
+      font-size: 26px;
+      font-weight: 700;
+      line-height: 1.3;
+      margin-bottom: 8px;
+    }
+    .sprint-hero .meta {
+      font-size: 13px;
+      color: var(--colour-text-muted);
+      display: flex;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+    .decision-pull {
+      background: var(--colour-green-bg);
+      border-left: 4px solid var(--colour-green);
+      padding: 20px 24px;
+      border-radius: 0 var(--radius) var(--radius) 0;
+      margin-bottom: 24px;
+    }
+    .decision-pull .label {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--colour-green);
+      margin-bottom: 8px;
+    }
+    .decision-pull p {
+      font-size: 16px;
+      font-weight: 600;
+      line-height: 1.5;
+    }
+    .layer-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 12px;
+      margin-bottom: 24px;
+    }
+    .layer-card {
+      background: var(--colour-surface);
+      border: 1px solid var(--colour-border);
+      border-radius: var(--radius);
+      padding: 16px 20px;
+    }
+    .layer-card .layer-num {
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--colour-accent);
+      margin-bottom: 4px;
+    }
+    .layer-card h4 {
+      font-size: 14px;
+      font-weight: 600;
+      margin-bottom: 6px;
+    }
+    .layer-card p, .layer-card ul {
+      font-size: 12px;
+      color: var(--colour-text-muted);
+      line-height: 1.6;
+    }
+    .layer-card ul {
+      margin: 6px 0 0;
+      padding-left: 18px;
+    }
+    .data-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+      margin-bottom: 24px;
+    }
+    .data-table th {
+      text-align: left;
+      padding: 8px 12px;
+      border-bottom: 2px solid var(--colour-border);
+      font-weight: 600;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: var(--colour-text-muted);
+    }
+    .data-table td {
+      padding: 8px 12px;
+      border-bottom: 1px solid var(--colour-border);
+    }
+    .data-table tr:last-child td { border-bottom: none; }
+    .not-doing-list {
+      list-style: none;
+      margin: 0 0 16px;
+    }
+    .not-doing-list li {
+      padding: 8px 14px;
+      font-size: 13px;
+      border-bottom: 1px solid var(--colour-border);
+      display: flex;
+      gap: 8px;
+    }
+    .not-doing-list li:last-child { border-bottom: none; }
+    .not-doing-list li::before { content: "\2715"; color: var(--colour-text-muted); flex-shrink: 0; }
+    .persona-sketches { margin-bottom: 24px; }
+    .persona-row {
+      display: flex;
+      gap: 12px;
+      padding: 12px 0;
+      border-bottom: 1px solid var(--colour-border);
+      font-size: 13px;
+    }
+    .persona-row:last-child { border-bottom: none; }
+    .persona-name { font-weight: 600; min-width: 160px; }
+    .persona-question { color: var(--colour-text-muted); font-style: italic; }
+    .next-action {
+      background: var(--colour-purple-bg);
+      border-left: 4px solid var(--colour-purple);
+      padding: 16px 20px;
+      border-radius: 0 var(--radius) var(--radius) 0;
+      margin-bottom: 24px;
+    }
+    .next-action .label {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--colour-purple);
+      margin-bottom: 6px;
+    }
+    .next-action p { font-size: 14px; font-weight: 500; }
+    .criteria-list { list-style: none; margin: 0 0 16px; counter-reset: item; }
+    .criteria-list li {
+      padding: 8px 14px 8px 36px;
+      position: relative;
+      font-size: 13px;
+      border-bottom: 1px solid var(--colour-border);
+    }
+    .criteria-list li:last-child { border-bottom: none; }
+    .criteria-list li::before {
+      content: counter(item);
+      counter-increment: item;
+      position: absolute;
+      left: 12px;
+      font-weight: 700;
+      color: var(--colour-accent);
+      font-size: 11px;
+    }
+  </style>
+</head>
+<body data-layout="sprint" data-root="../.." data-sprint="002">
+
+<main class="site-content">
+
+  <!-- Hero -->
+  <div class="sprint-hero">
+    <div class="sprint-label">Sprint 002 &middot; Full Sprint &middot; 5 March 2026</div>
+    <h1>Trip Viewer Data Concepts &mdash; Information Architecture</h1>
+    <div class="meta">
+      <span>Format: Full (4 phases)</span>
+      <span>Primary user: Daniel (Trip Planner)</span>
+      <span>Scope: Sidebar information architecture</span>
+      <span>Status: <span class="badge badge-green">Complete</span></span>
+    </div>
+  </div>
+
+  <!-- TL;DR -->
+  <div class="block-question">
+    <div class="label">The Challenge</div>
+    <p>The trip viewer sidebar shows stops and drive times, but lacks the data concepts a trip planner needs: booking status, costs, fuel estimates, day grouping, outbound/return routes, stop purpose, and timeline awareness. Daniel can't answer "Is everything sorted?" from the sidebar alone.</p>
+  </div>
+
+  <!-- Decision -->
+  <div class="decision-pull">
+    <div class="label">Decision</div>
+    <p>Restructure the trip viewer sidebar into a three-layer information architecture: summary bar at top, day-grouped itinerary with booking status badges, and outbound/return section markers. All data derived from existing Supabase fields. Empty fields hidden, not dashed.</p>
+  </div>
+
+  <!-- Three layers -->
+  <h2>The Three Layers</h2>
+  <div class="layer-grid">
+    <div class="layer-card">
+      <div class="layer-num">Layer 1</div>
+      <h4>Summary Bar (compact, always visible, max 60px)</h4>
+      <p>Trip-level metrics answering "Is everything sorted?" at a glance:</p>
+      <ul>
+        <li>Total distance &amp; driving time</li>
+        <li>Total estimated cost (campsites + fuel)</li>
+        <li>Fuel estimate from vehicle data</li>
+        <li>Nights total</li>
+        <li>Days until departure (countdown)</li>
+        <li>Booking health: "X/Y confirmed"</li>
+        <li>Countries count</li>
+      </ul>
+    </div>
+    <div class="layer-card">
+      <div class="layer-num">Layer 2</div>
+      <h4>Day-Grouped Itinerary</h4>
+      <p>Stops grouped by arrival date with day headers ("Day 3 &mdash; Monday 21 July"). Each stop card enriched with:</p>
+      <ul>
+        <li>Booking status badge: Confirmed (green), Pending (amber), Not booked (red)</li>
+        <li>Stop type badge with context (existing)</li>
+        <li>Cost per stop (if entered)</li>
+        <li>Booking reference (if entered)</li>
+        <li>Falls back to flat list when dates are missing</li>
+      </ul>
+    </div>
+    <div class="layer-card">
+      <div class="layer-num">Layer 3</div>
+      <h4>Outbound / Return Markers</h4>
+      <p>Section divider at the event stop (midpoint). Labels: "Outbound &mdash; X stops" / "Return &mdash; X stops". On the map: return route segments shown with dashed line style.</p>
+    </div>
+  </div>
+
+  <!-- Booking status derivation -->
+  <h2>Booking Status Derivation</h2>
+  <table class="data-table">
+    <thead>
+      <tr><th>Condition</th><th>Status</th><th>Badge</th></tr>
+    </thead>
+    <tbody>
+      <tr><td><code>booking_reference</code> is non-null</td><td>Confirmed</td><td>Green</td></tr>
+      <tr><td><code>booking_reference</code> is null AND type is campsite or transport</td><td>Pending</td><td>Amber</td></tr>
+      <tr><td><code>booking_reference</code> is null AND type is city, attraction, rest, or event</td><td>Not applicable</td><td>Hidden</td></tr>
+    </tbody>
+  </table>
+
+  <!-- Core questions framework -->
+  <h2>Rationale &mdash; Four Core Questions</h2>
+  <p style="font-size:14px;margin-bottom:16px;">
+    Dr. Aris Thorne's framing was decisive: the sidebar must answer four questions without Daniel having to ask them. Every data concept was evaluated against these questions:
+  </p>
+  <table class="data-table">
+    <thead>
+      <tr><th>Question</th><th>Answered By</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>Is everything booked?</td><td>Booking status badges + booking health count</td></tr>
+      <tr><td>What does this cost?</td><td>Trip cost summary + fuel estimate</td></tr>
+      <tr><td>What do I need to do?</td><td>"Needs action" count derived from data gaps</td></tr>
+      <tr><td>Where am I in the journey?</td><td>Day grouping + outbound/return + countdown</td></tr>
+    </tbody>
+  </table>
+
+  <!-- Squad perspectives -->
+  <h2>Squad Perspectives</h2>
+  <div class="persona-sketches">
+    <div class="persona-row">
+      <div class="persona-name">Leo Finch</div>
+      <div class="persona-question">"Booking status badges and day headers add visual variety without redesigning the cards. Stop purpose icons add personality. The summary bar should feel like a dashboard, not a spreadsheet."</div>
+    </div>
+    <div class="persona-row">
+      <div class="persona-name">Dr. Lena Petrova</div>
+      <div class="persona-question">"Schema already has most of what we need. Add fuel_consumption_lper100km to vehicles. Booking status is derived, not stored. Day grouping is pure UI. Vignettes are trip-level costs, stored as JSON."</div>
+    </div>
+    <div class="persona-row">
+      <div class="persona-name">Marcus Thorne</div>
+      <div class="persona-question">"NOT building: a booking engine, an expense tracker, real-time fuel pricing, calendar sync, or a task management system. The sidebar is read-only, derived from existing data. If a field is empty, hide it."</div>
+    </div>
+    <div class="persona-row">
+      <div class="persona-name">Kira Sharma</div>
+      <div class="persona-question">"TripSummary component above sidebar. Day grouping via Map&lt;string, Stop[]&gt;. Booking badge derived from booking_reference. Fuel = (km/100) &times; consumption &times; price. Cost breakdown as collapsible section."</div>
+    </div>
+    <div class="persona-row">
+      <div class="persona-name">Dr. Aris Thorne</div>
+      <div class="persona-question">"Four core questions: Is everything booked? What does it cost? What do I need to do? Where am I? If the sidebar answers those at a glance, the IA is right. Don't let enrichment crowd out the core."</div>
+    </div>
+    <div class="persona-row">
+      <div class="persona-name">Rowan Vale</div>
+      <div class="persona-question">"The feeling should be confidence. Day grouping creates narrative &mdash; each day is a chapter. The countdown creates anticipation, not pressure. The outbound/return split is a natural story arc."</div>
+    </div>
+    <div class="persona-row">
+      <div class="persona-name">Nara Shin</div>
+      <div class="persona-question">"TripIt research: booking status is the #1 information need. Google Trips validated day grouping. Fuelly shows fuel as total, not per-segment. Pattern: summary at top, grouped detail below, progressive disclosure."</div>
+    </div>
+    <div class="persona-row">
+      <div class="persona-name">Ines Alvarez</div>
+      <div class="persona-question">"Dead ends to prevent: empty states showing &euro;0, day grouping breaking on missing dates, 'confirmed' vs 'booked but no ref entered' ambiguity. Summary bar max 60px &mdash; must not push itinerary below the fold."</div>
+    </div>
+  </div>
+
+  <!-- Dissent -->
+  <h2>Elias Vance &mdash; Mandatory Dissent</h2>
+  <div class="dissent-block">
+    <div class="dissent-name">Elias Vance &mdash; information density concern, accepted with conditions</div>
+    <blockquote>
+      "Adding eight data concepts to a sidebar that currently shows five fields per card risks overwhelming Hannah. Daniel will love it; Hannah will feel like she's looking at a spreadsheet. I accept the decision because the visual hierarchy addresses my concern &mdash; but I want a clear rule: if a data field is empty, it must be invisible, not show a dash or zero. Also: the summary bar's 'booking health' metric (e.g. '7/11 confirmed') is more useful to Hannah than individual badges per card."
+    </blockquote>
+    <p style="margin-top:8px;font-size:12px;color:#6b7280;"><strong>Outcome:</strong> Accepted. Empty fields will be hidden, not shown as dashes. Summary bar includes booking health metric for at-a-glance scanning. Recorded in dissent register.</p>
+  </div>
+
+  <!-- What we're NOT doing -->
+  <h2>What We Are NOT Doing</h2>
+  <ul class="not-doing-list">
+    <li>Booking management &mdash; display status only, no write operations from sidebar</li>
+    <li>Expense tracking &mdash; estimated costs, not actuals with receipts</li>
+    <li>Real-time fuel pricing &mdash; static consumption rate &times; distance &times; assumed price</li>
+    <li>Calendar sync or iCal export &mdash; day grouping is visual only</li>
+    <li>Task/todo management &mdash; "needs action" is a read-only count, not a checklist</li>
+    <li>Two-mode sidebar toggle &mdash; using visual hierarchy instead</li>
+    <li>Per-segment fuel breakdowns &mdash; total fuel estimate only</li>
+    <li>Mobile layout &mdash; deferred to Sprint 004</li>
+  </ul>
+
+  <!-- Success criteria -->
+  <h2>Success Criteria</h2>
+  <ol class="criteria-list">
+    <li>Daniel can state the booking status of any stop without clicking or expanding &mdash; booking badges visible on every bookable stop card</li>
+    <li>Summary bar shows total cost, fuel estimate, and booking health (X/Y confirmed) without scrolling &mdash; all visible above the fold on 1080p</li>
+    <li>Stops are grouped by day with day headers &mdash; Daniel can identify which stops belong to which travel day</li>
+    <li>Outbound/return split is visually distinct &mdash; section marker and/or route line style change</li>
+    <li>Empty data fields are invisible &mdash; no cost line if cost is null, no cost metric if all costs null</li>
+  </ol>
+
+  <!-- Next action -->
+  <div class="next-action">
+    <div class="label">Next Action</div>
+    <p>Implement the creative brief &mdash; add the summary bar, day grouping, booking status badges, and outbound/return markers to the trip viewer sidebar. One schema addition: <code>fuel_consumption_lper100km</code> on the vehicles table.</p>
+  </div>
+
+  <!-- Artefacts -->
+  <h2>Artefacts</h2>
+  <ul class="artifacts">
+    <li>&#128196; <a href="../../../research/sprints/sprint-002-data-concepts/brief.md">brief.md</a></li>
+    <li>&#128172; <a href="../../../research/sprints/sprint-002-data-concepts/sketches.md">sketches.md</a> &mdash; 9 persona perspectives</li>
+    <li>&#9989; <a href="../../../research/sprints/sprint-002-data-concepts/decision.md">decision.md</a></li>
+    <li>&#127912; <a href="../../../research/sprints/sprint-002-data-concepts/creative-brief.md">creative-brief.md</a> &mdash; implementation-ready spec</li>
+    <li>&#128161; <a href="../../../research/sprints/sprint-002-data-concepts/ideas.md">ideas.md</a> &mdash; 6 ideas for future sprints</li>
+    <li>&#128203; <a href="../../../research/sprints/sprint-002-data-concepts/synthesis.md">synthesis.md</a></li>
+    <li>&#128230; <a href="../../../research/sprints/sprint-002-data-concepts/summary.json">summary.json</a></li>
+  </ul>
+
+</main>
+
+<script src="../../layout.js"></script>
+</body>
+</html>

@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Spike 001 — Outbound route stop positions | Cork GP 2026</title>
+  <link rel="stylesheet" href="../../styles.css">
+</head>
+<body data-layout="spike" data-root="../.." data-spike="001">
+
+<main class="site-content">
+
+  <!-- Hero -->
+  <div class="spike-hero">
+    <div class="spike-number">Spike 001 · Research · 5 March 2026</div>
+    <h1>Where should Stop 4 and Stop 5 sit to keep all outbound legs within 5 hours?</h1>
+    <div class="meta">
+      <span>Type: Research</span>
+      <span>Timebox: 1 day</span>
+      <span>Status: ✅ Complete</span>
+      <span>Confidence: <span class="confidence confidence-high">High</span></span>
+    </div>
+  </div>
+
+  <!-- Question -->
+  <div class="block-question">
+    <div class="label">The Question</div>
+    <p>Which intermediate positions for Stop 4 and Stop 5 on the outbound route (Luxembourg → Hungaroring) keep every leg within the 5-hour Cork family driving limit?</p>
+  </div>
+
+  <!-- Answer -->
+  <div class="block-answer">
+    <div>
+      <div class="label">Answer</div>
+      <p>Stop 4 → Bavaria (Starnberger See) [11.34, 47.90]<br>Stop 5 → Wachau Valley (Melk, Austria) [15.33, 48.22]<br>All three outbound legs are now ≤4.5h — within the 5h limit.</p>
+    </div>
+    <span class="confidence confidence-high">High confidence</span>
+  </div>
+
+  <!-- Recommendation -->
+  <h2>Recommendation</h2>
+  <table>
+    <thead>
+      <tr>
+        <th>Stop</th>
+        <th>Old position</th>
+        <th>New position</th>
+        <th>New coords</th>
+        <th>Leg in</th>
+        <th>Leg out</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr class="highlight">
+        <td>4</td>
+        <td>Lake Constance – Lindau</td>
+        <td><strong>Bavaria – Starnberger See</strong></td>
+        <td><code>[11.34, 47.90]</code></td>
+        <td>~4.5h 🟡</td>
+        <td>~3h 🟢</td>
+      </tr>
+      <tr class="highlight">
+        <td>5</td>
+        <td>Salzburg area (Radstadt foothills)</td>
+        <td><strong>Wachau – Melk, Austria</strong></td>
+        <td><code>[15.33, 48.22]</code></td>
+        <td>~3h 🟢</td>
+        <td>~2.5h 🟢</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <!-- Full leg table -->
+  <h2>Full Outbound Leg Analysis</h2>
+  <table>
+    <thead>
+      <tr>
+        <th>Leg</th>
+        <th>From</th>
+        <th>To</th>
+        <th>Est. distance</th>
+        <th>Est. time</th>
+        <th>Status</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>1→2</td>
+        <td>Folkestone</td>
+        <td>Bruges</td>
+        <td>~130km</td>
+        <td>~1.5h</td>
+        <td>🟢</td>
+      </tr>
+      <tr>
+        <td>2→3</td>
+        <td>Bruges</td>
+        <td>Luxembourg (Bissen)</td>
+        <td>~270km</td>
+        <td>~2.5h</td>
+        <td>🟢</td>
+      </tr>
+      <tr class="highlight">
+        <td>3→4</td>
+        <td>Luxembourg (Bissen)</td>
+        <td><strong>Bavaria (Starnberger See)</strong></td>
+        <td>~450km</td>
+        <td><strong>~4.5h</strong></td>
+        <td>🟡</td>
+      </tr>
+      <tr class="highlight">
+        <td>4→5</td>
+        <td><strong>Bavaria (Starnberger See)</strong></td>
+        <td><strong>Wachau (Melk)</strong></td>
+        <td>~310km</td>
+        <td><strong>~3h</strong></td>
+        <td>🟢</td>
+      </tr>
+      <tr class="highlight">
+        <td>5→6</td>
+        <td><strong>Wachau (Melk)</strong></td>
+        <td>Hungaroring</td>
+        <td>~250km</td>
+        <td><strong>~2.5h</strong></td>
+        <td>🟢</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <!-- Evidence: Stop 4 -->
+  <h2>Evidence — Stop 4 Options</h2>
+  <table>
+    <thead>
+      <tr>
+        <th>Option</th>
+        <th>Coords</th>
+        <th>Drive from Luxembourg</th>
+        <th>Drive to Wachau</th>
+        <th>Character</th>
+        <th>Verdict</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>Lindau (old)</td>
+        <td><code>[9.68, 47.54]</code></td>
+        <td>~6.5h ❌</td>
+        <td>~3.5h</td>
+        <td>Beautiful lakeside</td>
+        <td>Rejected — Mapbox routes via France</td>
+      </tr>
+      <tr>
+        <td>Konstanz</td>
+        <td><code>[9.18, 47.66]</code></td>
+        <td>~4h 🟢</td>
+        <td>~3.5h</td>
+        <td>Lake Constance NW shore</td>
+        <td>Viable fallback</td>
+      </tr>
+      <tr>
+        <td>Augsburg</td>
+        <td><code>[10.90, 48.37]</code></td>
+        <td>~3.5h 🟢</td>
+        <td>~3.5h</td>
+        <td>City / motorway</td>
+        <td>Too characterless</td>
+      </tr>
+      <tr class="highlight">
+        <td><strong>Starnberger See ✅</strong></td>
+        <td><code>[11.34, 47.90]</code></td>
+        <td><strong>~4.5h 🟡</strong></td>
+        <td><strong>~3h 🟢</strong></td>
+        <td><strong>Bavarian lake, Alps views</strong></td>
+        <td><strong>Recommended</strong></td>
+      </tr>
+      <tr>
+        <td>Ammersee</td>
+        <td><code>[11.10, 47.98]</code></td>
+        <td>~4.5h 🟡</td>
+        <td>~3.2h 🟢</td>
+        <td>Quieter Bavarian lake</td>
+        <td>Viable alternative</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <!-- Evidence: Stop 5 -->
+  <h2>Evidence — Stop 5 Options</h2>
+  <table>
+    <thead>
+      <tr>
+        <th>Option</th>
+        <th>Coords</th>
+        <th>Drive from Bavaria</th>
+        <th>Drive to Hungaroring</th>
+        <th>Character</th>
+        <th>Verdict</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>Salzburg area (old)</td>
+        <td><code>[12.79, 47.30]</code></td>
+        <td>~1.5h 🟢</td>
+        <td>~3.5h 🟡</td>
+        <td>Mountain foothills (Radstadt)</td>
+        <td>Rejected — leg 4→5 too short; coords were wrong area</td>
+      </tr>
+      <tr>
+        <td>Linz</td>
+        <td><code>[14.29, 48.31]</code></td>
+        <td>~2h 🟢</td>
+        <td>~3h 🟢</td>
+        <td>Danube city</td>
+        <td>Viable — less scenic</td>
+      </tr>
+      <tr class="highlight">
+        <td><strong>Wachau (Melk) ✅</strong></td>
+        <td><code>[15.33, 48.22]</code></td>
+        <td><strong>~3h 🟢</strong></td>
+        <td><strong>~2.5h 🟢</strong></td>
+        <td><strong>UNESCO Danube gorge, stunning</strong></td>
+        <td><strong>Recommended</strong></td>
+      </tr>
+      <tr>
+        <td>St. Pölten</td>
+        <td><code>[15.62, 48.20]</code></td>
+        <td>~3.5h 🟡</td>
+        <td>~2h 🟢</td>
+        <td>Industrial city</td>
+        <td>Not recommended</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <!-- Constraints discovered -->
+  <h2>Constraints Discovered</h2>
+  <ul class="constraint-list">
+    <li><strong>Mapbox via-France routing:</strong> Mapbox routes Luxembourg → Lindau via Strasbourg/Alsace, not via Saarland/Stuttgart, producing ~6.5h. Positions east of ~9.2°E (east of Stuttgart) force the faster A6/A8 motorway corridor.</li>
+    <li><strong>Esch-sur-Sûre ≠ Luxembourg City:</strong> Camping Bissen is in the far north of Luxembourg near the Belgian border [5.9537, 49.8714]. Use these coords for drive-time estimates, not Luxembourg City (~40km further south-east).</li>
+    <li><strong>Old Stop 5 coords were in the Austrian Alps:</strong> [12.7939, 47.2959] is Radstadt, a ski resort — mountain road territory. The new Wachau position [15.33, 48.22] is on the Danube A1 motorway (all-motorway routing).</li>
+  </ul>
+
+  <!-- Dissent -->
+  <h2>Elias Vance — Mandatory Dissent</h2>
+  <div class="dissent-block">
+    <div class="dissent-name">Elias Vance</div>
+    <blockquote>
+      "We are moving away from Lake Constance (a highlight) towards the Bavarian Lakes, and from the Salzburg/Alps region towards the Wachau Danube Valley. Both new stops are scenic and I'd rate them comparable experiences — but I want it on record that we have not validated this change with Hannah. Lake Constance was chosen partly for her benefit. The Starnberger See is beautiful (Ludwig II's castle is nearby) and Wachau is arguably even more spectacular than the Salzburg foothills. I'm not blocking this, but we should tell Hannah where we're going."
+    </blockquote>
+    <p style="margin-top:8px;font-size:12px;color:#6b7280;"><strong>Outcome:</strong> Accepted. Experience quality is maintained or improved. The 5h driving constraint is hard. Recorded in dissent register.</p>
+  </div>
+
+  <!-- Unblocked work -->
+  <h2>What This Unblocks</h2>
+  <div class="unblocked">
+    <strong>Sprint-backlog item 001</strong> — Stop 4 campsite search: now scoped to the <strong>Bavarian Lakes area (Starnberger See / Ammersee)</strong>, 21–23 Jul 2026.<br>
+    <strong>Sprint-backlog item 002</strong> — Stop 5 campsite search: now scoped to the <strong>Wachau Valley (Melk / Spitz / Dürnstein)</strong>, 23–24 Jul 2026.
+  </div>
+
+  <!-- Artefacts -->
+  <h2>Artefacts</h2>
+  <ul class="artifacts">
+    <li>📄 <a href="../../.." target="_blank">research/spikes/spike-001-route-stop-positions/brief.md</a></li>
+    <li>📄 <a href="../../.." target="_blank">research/spikes/spike-001-route-stop-positions/output.md</a></li>
+    <li>📦 <a href="../../.." target="_blank">research/spikes/spike-001-route-stop-positions/summary.json</a></li>
+  </ul>
+
+</main>
+
+<script src="../../layout.js"></script>
+</body>
+</html>

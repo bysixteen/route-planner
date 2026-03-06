@@ -1,0 +1,40 @@
+{
+  "type": "sprint",
+  "sprint_id": "sprint-002",
+  "topic": "Trip Viewer Data Concepts — Information Architecture",
+  "date_completed": "2026-03-05",
+  "long_term_goal": "Daniel opens the trip viewer and immediately knows the full state of his trip: what's confirmed, what's pending, what it will cost, how much fuel he'll burn, which day each stop falls on, and what he still needs to action. Hannah opens the same view on her phone and feels confident the trip is well-organised.",
+  "sprint_questions": [
+    "Can we show booking status per stop without introducing a new data model?",
+    "Will Daniel be able to see 'what needs doing today' from the sidebar alone?",
+    "Can we group stops by day and distinguish outbound from return without overcomplicating the sidebar layout?"
+  ],
+  "key_question_answered": "Can we show booking status per stop without introducing a new data model? — Yes. Derive status from booking_reference presence and stop type. No new schema column needed for status.",
+  "key_decision": "Restructured the trip viewer sidebar into a three-layer information architecture: summary bar (trip metrics), day-grouped itinerary with booking status badges, and outbound/return section markers.",
+  "squad_participants": [
+    "Leo Finch (Visual Designer)",
+    "Dr. Lena Petrova (Design Engineer)",
+    "Marcus Thorne (Senior Developer)",
+    "Kira Sharma (Developer)",
+    "Dr. Aris Thorne (Strategist)",
+    "Rowan Vale (Craftsman)",
+    "Elias Vance (Client)",
+    "Nara Shin (UX Researcher)",
+    "Ines Alvarez (UX Designer)"
+  ],
+  "elias_dissent": "The risk is adding eight data concepts to a sidebar that currently shows five fields per card. Daniel will love it; Hannah will feel overwhelmed. Accepted with condition: empty fields must be hidden not shown as dashes, and the summary bar must include a booking health metric for at-a-glance scanning.",
+  "living_docs_updated": [
+    "research/DECISIONS.md",
+    "research/sprint-status.md",
+    "research/PRINCIPLES.md",
+    "research/dissent-register.md"
+  ],
+  "next_action": "Implement the creative brief — add summary bar, day grouping, booking status badges, and outbound/return markers to the trip viewer sidebar.",
+  "open_questions": [
+    "What fuel price per litre should we assume for the fuel estimate?",
+    "Should vignette costs be stored on the trip or derived from route countries?",
+    "Is a manual booking_status field needed eventually to distinguish 'booked but no ref' from 'not booked'?"
+  ],
+  "ideas_count": 6,
+  "creative_brief": true
+}
