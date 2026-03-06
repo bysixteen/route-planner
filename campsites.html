@@ -1,0 +1,1305 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Hungarian GP Road Trip 2026 — Campsite Booking</title>
+  <link href='https://api.mapbox.com/mapbox-gl-js/v3.8.0/mapbox-gl.css' rel='stylesheet' />
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #f5f5f0;
+      color: #1a1a1a;
+      padding: 24px 16px 64px;
+    }
+
+    .container {
+      max-width: 800px;
+      margin: 0 auto;
+    }
+
+    /* Header */
+    .header {
+      background: #1a1a2e;
+      color: white;
+      border-radius: 16px;
+      padding: 32px;
+      margin-bottom: 24px;
+      position: relative;
+      overflow: hidden;
+    }
+    .header::before {
+      content: '';
+      position: absolute;
+      top: -40px; right: -40px;
+      width: 180px; height: 180px;
+      background: #e8002d;
+      border-radius: 50%;
+      opacity: 0.15;
+    }
+    .header-flag {
+      font-size: 13px;
+      font-weight: 600;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: #e8002d;
+      margin-bottom: 8px;
+    }
+    .header h1 {
+      font-size: 28px;
+      font-weight: 800;
+      line-height: 1.2;
+      margin-bottom: 16px;
+    }
+    .header h1 span { color: #e8002d; }
+    .meta-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      font-size: 13px;
+      color: #ccc;
+    }
+    .meta-item { display: flex; align-items: center; gap: 6px; }
+    .meta-item strong { color: white; }
+
+    /* Progress bar */
+    .progress-card {
+      background: white;
+      border-radius: 12px;
+      padding: 20px 24px;
+      margin-bottom: 24px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+    }
+    .progress-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
+    }
+    .progress-header h2 { font-size: 15px; font-weight: 700; }
+    .progress-count { font-size: 13px; color: #666; }
+    .progress-bar {
+      background: #eee;
+      border-radius: 99px;
+      height: 8px;
+      overflow: hidden;
+    }
+    .progress-fill {
+      background: linear-gradient(90deg, #16a34a, #22c55e);
+      height: 100%;
+      border-radius: 99px;
+      transition: width 0.3s;
+    }
+
+    /* Section label */
+    .route-section {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: #999;
+      padding: 0 4px;
+      margin: 28px 0 10px;
+    }
+
+    /* Campsite card */
+    .card {
+      background: white;
+      border-radius: 14px;
+      margin-bottom: 12px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+      overflow: hidden;
+      border: 2px solid transparent;
+      transition: border-color 0.2s;
+    }
+    .card.booked { border-color: #16a34a; }
+    .card.tbd { border-color: #f59e0b; }
+    .card.warning { border-color: #ef4444; }
+
+    .card-header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      padding: 18px 20px 14px;
+      gap: 12px;
+    }
+    .card-left { display: flex; align-items: flex-start; gap: 14px; flex: 1; min-width: 0; }
+    .stop-num {
+      background: #f0f0f0;
+      color: #666;
+      font-size: 11px;
+      font-weight: 700;
+      width: 26px;
+      height: 26px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      margin-top: 2px;
+    }
+    .card.booked .stop-num { background: #dcfce7; color: #16a34a; }
+
+    .card-info { flex: 1; min-width: 0; }
+    .card-location {
+      font-size: 11px;
+      color: #888;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      margin-bottom: 2px;
+    }
+    .card-name {
+      font-size: 17px;
+      font-weight: 700;
+      color: #1a1a1a;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .card-dates {
+      font-size: 12px;
+      color: #888;
+      margin-top: 2px;
+    }
+
+    .badge {
+      font-size: 11px;
+      font-weight: 700;
+      padding: 4px 10px;
+      border-radius: 99px;
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+    .badge-booked { background: #dcfce7; color: #15803d; }
+    .badge-book { background: #fef9c3; color: #a16207; }
+    .badge-tbd { background: #fef3c7; color: #b45309; }
+    .badge-free { background: #e0f2fe; color: #0369a1; }
+    .badge-optional { background: #f3f4f6; color: #6b7280; }
+
+    /* Card body */
+    .card-body {
+      padding: 0 20px 18px 60px;
+    }
+
+    /* Why here banner */
+    .why-here {
+      background: #f0f4ff;
+      border-left: 3px solid #6366f1;
+      border-radius: 0 6px 6px 0;
+      padding: 10px 12px;
+      font-size: 12px;
+      color: #3730a3;
+      line-height: 1.6;
+      margin-bottom: 14px;
+    }
+    .why-here strong { display: block; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: #6366f1; margin-bottom: 3px; }
+
+    .detail-row {
+      display: flex;
+      align-items: baseline;
+      gap: 8px;
+      margin-bottom: 6px;
+      font-size: 13px;
+    }
+    .detail-label {
+      color: #999;
+      font-weight: 600;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      min-width: 80px;
+      flex-shrink: 0;
+    }
+    .detail-value { color: #333; }
+    .detail-value a {
+      color: #2563eb;
+      text-decoration: none;
+      font-weight: 500;
+    }
+    .detail-value a:hover { text-decoration: underline; }
+
+    .cost-highlight {
+      font-weight: 700;
+      color: #1a1a1a;
+      font-size: 15px;
+    }
+
+    .stars { color: #f59e0b; font-size: 12px; }
+
+    .note {
+      background: #f9f9f7;
+      border-left: 3px solid #e5e5e5;
+      border-radius: 0 6px 6px 0;
+      padding: 10px 12px;
+      font-size: 12px;
+      color: #555;
+      line-height: 1.5;
+      margin-top: 10px;
+    }
+    .note.warn { border-left-color: #ef4444; background: #fff5f5; color: #7f1d1d; }
+    .note.tip  { border-left-color: #3b82f6; background: #eff6ff; color: #1e3a8a; }
+    .note.success { border-left-color: #16a34a; background: #f0fdf4; color: #14532d; }
+
+    /* Alternative option block */
+    .alt-block {
+      border: 1.5px dashed #d1d5db;
+      border-radius: 10px;
+      padding: 12px 14px;
+      margin-top: 12px;
+    }
+    .alt-block-title {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: #6b7280;
+      margin-bottom: 8px;
+    }
+    .alt-option {
+      padding: 10px 12px;
+      border-radius: 8px;
+      margin-bottom: 8px;
+      font-size: 12px;
+      line-height: 1.5;
+    }
+    .alt-option:last-child { margin-bottom: 0; }
+    .alt-option.current { background: #fef9c3; }
+    .alt-option.alternative { background: #f0fdf4; }
+    .alt-option-label {
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-bottom: 4px;
+    }
+    .alt-option.current .alt-option-label { color: #a16207; }
+    .alt-option.alternative .alt-option-label { color: #15803d; }
+    .alt-option p { color: #444; }
+    .alt-pros-cons { margin-top: 6px; font-size: 11px; }
+    .alt-pros-cons span { display: inline-block; margin-right: 10px; }
+    .pro { color: #15803d; }
+    .con { color: #b91c1c; }
+
+    .divider { height: 1px; background: #f0f0f0; margin: 12px 0 14px; }
+
+    /* Cost summary */
+    .summary-card {
+      background: #1a1a2e;
+      color: white;
+      border-radius: 14px;
+      padding: 24px;
+      margin-top: 32px;
+    }
+    .summary-card h2 {
+      font-size: 16px;
+      font-weight: 700;
+      margin-bottom: 16px;
+      color: #e8002d;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+    .summary-row {
+      display: flex;
+      justify-content: space-between;
+      font-size: 13px;
+      padding: 8px 0;
+      border-bottom: 1px solid rgba(255,255,255,0.08);
+    }
+    .summary-row:last-of-type { border-bottom: none; }
+    .summary-row .label { color: #aaa; }
+    .summary-row .amount { font-weight: 600; color: white; }
+    .summary-total {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 16px;
+      padding-top: 16px;
+      border-top: 1px solid rgba(255,255,255,0.2);
+      font-size: 16px;
+      font-weight: 700;
+    }
+    .summary-total .amount { color: #4ade80; }
+
+    /* Checklist */
+    .checklist {
+      background: white;
+      border-radius: 14px;
+      padding: 20px 24px;
+      margin-top: 16px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+    }
+    .checklist h2 {
+      font-size: 14px;
+      font-weight: 700;
+      margin-bottom: 14px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: #666;
+    }
+    .check-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      padding: 8px 0;
+      border-bottom: 1px solid #f5f5f5;
+      font-size: 13px;
+      color: #333;
+      line-height: 1.4;
+    }
+    .check-item:last-child { border-bottom: none; }
+    .check-box {
+      width: 16px; height: 16px;
+      border: 2px solid #d1d5db;
+      border-radius: 4px;
+      flex-shrink: 0;
+      margin-top: 1px;
+    }
+
+    /* Driving stops */
+    .stops-card {
+      background: white;
+      border-radius: 14px;
+      padding: 20px 24px;
+      margin-top: 16px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+    }
+    .stops-card h2 {
+      font-size: 14px;
+      font-weight: 700;
+      margin-bottom: 14px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: #666;
+    }
+    .stop-item {
+      display: flex;
+      gap: 12px;
+      padding: 8px 0;
+      border-bottom: 1px solid #f5f5f5;
+      font-size: 13px;
+    }
+    .stop-item:last-child { border-bottom: none; }
+    .stop-icon { font-size: 16px; flex-shrink: 0; width: 20px; text-align: center; }
+    .stop-text strong { display: block; font-weight: 600; color: #1a1a1a; }
+    .stop-text span { color: #888; font-size: 12px; }
+
+    .footer {
+      text-align: center;
+      font-size: 11px;
+      color: #bbb;
+      margin-top: 40px;
+    }
+
+    /* Map section */
+    .map-card {
+      background: white;
+      border-radius: 14px;
+      margin-bottom: 24px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+      overflow: hidden;
+    }
+    .map-card-header {
+      padding: 18px 20px 12px;
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+    }
+    .map-card-header h2 { font-size: 15px; font-weight: 700; }
+    .map-card-header p { font-size: 12px; color: #999; }
+    #trip-map { width: 100%; height: 460px; }
+    .drive-times-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+      gap: 8px;
+      padding: 14px 16px 16px;
+      border-top: 1px solid #f0f0f0;
+    }
+    .drive-time-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 12px;
+      color: #555;
+      background: #f8f8f8;
+      border-radius: 8px;
+      padding: 8px 10px;
+    }
+    .drive-time-arrow { color: #999; font-size: 10px; }
+    .drive-time-km { font-weight: 700; color: #1a1a1a; }
+    .drive-time-dur { color: #666; }
+    .map-stop-marker {
+      width: 30px; height: 30px;
+      border-radius: 50%;
+      border: 3px solid white;
+      display: flex; align-items: center; justify-content: center;
+      color: white; font-weight: 800; font-size: 12px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.35);
+      cursor: pointer;
+    }
+    .map-option-marker {
+      width: 22px; height: 22px;
+      border-radius: 50%;
+      border: 2px solid white;
+      display: flex; align-items: center; justify-content: center;
+      color: white; font-weight: 700; font-size: 9px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.3);
+      cursor: pointer;
+      background: #8b5cf6;
+    }
+    .map-option-marker.rec { background: #ec4899; }
+
+    .options-table { width: 100%; border-collapse: collapse; margin: 8px 0; font-size: 12px; }
+    .options-table th { text-align: left; padding: 6px 8px; background: #f8fafc; border-bottom: 2px solid #e2e8f0; font-size: 11px; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px; }
+    .options-table td { padding: 6px 8px; border-bottom: 1px solid #f1f5f9; vertical-align: top; }
+    .options-table tr:hover { background: #f8fafc; }
+    .options-table a { color: #3b82f6; text-decoration: none; font-weight: 600; }
+    .options-table a:hover { text-decoration: underline; }
+    .rec-badge { display: inline-block; background: #ec4899; color: white; font-size: 9px; font-weight: 700; padding: 1px 5px; border-radius: 8px; margin-left: 4px; vertical-align: middle; }
+    .option-id { display: inline-block; width: 20px; height: 20px; border-radius: 50%; background: #8b5cf6; color: white; font-size: 9px; font-weight: 700; text-align: center; line-height: 20px; margin-right: 4px; }
+    .option-id.rec { background: #ec4899; }
+
+    @media (max-width: 500px) {
+      .meta-grid { grid-template-columns: 1fr; }
+      .header h1 { font-size: 22px; }
+      .card-name { font-size: 15px; }
+      .card-body { padding-left: 20px; }
+      #trip-map { height: 320px; }
+    }
+  </style>
+</head>
+<body>
+<div class="container">
+
+  <!-- Header -->
+  <div class="header">
+    <div class="header-flag">🏁 Formula 1 · Hungarian Grand Prix</div>
+    <h1>The Cork Family<br><span>Road Trip 2026</span></h1>
+    <div class="meta-grid">
+      <div class="meta-item">📅 <span><strong>17 Jul – 2 Aug 2026</strong></span></div>
+      <div class="meta-item">🚐 <span><strong>Dexter the T7</strong> · 4 travellers</span></div>
+      <div class="meta-item">🌍 <span><strong>7 countries</strong> · 4,000+ km</span></div>
+      <div class="meta-item">🚇 <span>Eurotunnel <strong>£460 return ✅</strong></span></div>
+    </div>
+  </div>
+
+  <!-- Calendar download -->
+  <div style="text-align:right;margin-bottom:10px">
+    <a href="hungarian-gp-2026.ics" download style="display:inline-flex;align-items:center;gap:6px;background:#1a1a2e;color:white;font-size:12px;font-weight:600;padding:8px 14px;border-radius:8px;text-decoration:none">
+      📅 Add to Apple Calendar
+    </a>
+  </div>
+
+  <!-- Progress -->
+  <div class="progress-card">
+    <div class="progress-header">
+      <h2>Booking Progress</h2>
+      <span class="progress-count">6 confirmed · 4 to book</span>
+    </div>
+    <div class="progress-bar">
+      <div class="progress-fill" style="width: 50%"></div>
+    </div>
+  </div>
+
+  <!-- Route Map -->
+  <div class="map-card">
+    <div class="map-card-header">
+      <h2>🗺 Route Overview</h2>
+      <p>Click a marker for drive time info</p>
+    </div>
+    <div id="trip-map"></div>
+    <div style="font-size:11px;color:#999;padding:10px 0 6px;text-align:center">
+      Max drive per day: 5 hours &nbsp;
+      <span style="color:#16a34a">&#9632;</span> &lt;3h &nbsp;
+      <span style="color:#d97706">&#9632;</span> 3–5h &nbsp;
+      <span style="color:#ef4444">&#9632;</span> &gt;5h
+    </div>
+    <div id="drive-times-grid" class="drive-times-grid"></div>
+  </div>
+
+  <!-- ===== OUTBOUND ===== -->
+  <div class="route-section">⬇ Outbound Route</div>
+
+  <!-- Stop 1 — Folkestone -->
+  <div class="card booked">
+    <div class="card-header">
+      <div class="card-left">
+        <div class="stop-num">1</div>
+        <div class="card-info">
+          <div class="card-location">Folkestone, UK</div>
+          <div class="card-name">The Doghouse Pub</div>
+          <div class="card-dates">Day 1 · Fri 17 Jul → Sat 18 Jul · 1 night</div>
+        </div>
+      </div>
+      <span class="badge badge-booked">✅ Confirmed</span>
+    </div>
+    <div class="card-body">
+      <div class="why-here">
+        <strong>Why here?</strong>
+        Pre-tunnel staging post — catching the 10:20 Eurotunnel crossing Saturday morning. Nothing to do except relax, eat pub food, and get an early night before the adventure starts.
+      </div>
+      <div class="detail-row">
+        <span class="detail-label">Cost</span>
+        <span class="detail-value cost-highlight">FREE</span>
+      </div>
+      <div class="detail-row">
+        <span class="detail-label">Ref</span>
+        <span class="detail-value">—</span>
+      </div>
+      <div class="note tip">📧 Email ahead to confirm — max 3 vans allowed. Free car park with overnight toilets, good food &amp; cheap ale. 15 mins from the Eurotunnel terminal.</div>
+    </div>
+  </div>
+
+  <!-- Stop 2 — Bruges -->
+  <div class="card booked">
+    <div class="card-header">
+      <div class="card-left">
+        <div class="stop-num">2</div>
+        <div class="card-info">
+          <div class="card-location">Bruges, Belgium</div>
+          <div class="card-name">Camping Memling</div>
+          <div class="card-dates">Days 2–3 · Sat 18 Jul → Mon 20 Jul · 2 nights · rest day Sun 19 Jul</div>
+        </div>
+      </div>
+      <span class="badge badge-booked">✅ Booked</span>
+    </div>
+    <div class="card-body">
+      <div class="why-here">
+        <strong>Why here?</strong>
+        One of Europe's most beautiful medieval cities. You both wanted to walk the old town — canal boat trips, chocolate shops, Belgian waffles, the Gothic Markt square. Hannah specifically picked this campsite because it's walking distance to the centre (1.5 km), with a bus every 10 min as backup.
+      </div>
+      <div class="detail-row">
+        <span class="detail-label">Cost</span>
+        <span class="detail-value cost-highlight">€110 · PAID in full ✅</span>
+      </div>
+      <div class="detail-row">
+        <span class="detail-label">Ref</span>
+        <span class="detail-value"><strong>RE792256C</strong></span>
+      </div>
+      <div class="detail-row">
+        <span class="detail-label">Check-in</span>
+        <span class="detail-value">From 12:00 (noon) until 23:00</span>
+      </div>
+      <div class="detail-row">
+        <span class="detail-label">Check-out</span>
+        <span class="detail-value">Before 11:30</span>
+      </div>
+      <div class="detail-row">
+        <span class="detail-label">Reviews</span>
+        <span class="detail-value">
+          <a href="https://www.tripadvisor.co.uk/Hotel_Review-g188671-d1872721-Reviews-Camping_Memling-Bruges_West_Flanders_Province.html" target="_blank">
+            <span class="stars">★★★★</span> TripAdvisor 4/5 · 429 reviews · #4 in Bruges
+          </a>
+        </span>
+      </div>
+      <div class="note success">✅ Paid in full — nothing outstanding.</div>
+    </div>
+  </div>
+
+  <!-- Stop 3 — Luxembourg -->
+  <div class="card booked">
+    <div class="card-header">
+      <div class="card-left">
+        <div class="stop-num">3</div>
+        <div class="card-info">
+          <div class="card-location">Luxembourg</div>
+          <div class="card-name">Camping Bissen</div>
+          <div class="card-dates">Day 4 · Mon 20 Jul → Tue 21 Jul · 1 night</div>
+        </div>
+      </div>
+      <span class="badge badge-booked">✅ Booked</span>
+    </div>
+    <div class="card-body">
+      <div class="why-here">
+        <strong>Why here?</strong>
+        Practical stop that earns its keep — Luxembourg has the cheapest fuel on the whole route (~€1.45/L vs ~€1.70+ elsewhere). Fill Dexter right up before Lake Constance. The campsite sits on the banks of the Sûre river in the Luxembourg Ardennes; the pretty gorge village of Esch-sur-Sûre is a short walk away.
+      </div>
+      <div class="detail-row">
+        <span class="detail-label">Cost</span>
+        <span class="detail-value cost-highlight">€49 (includes electricity)</span>
+      </div>
+      <div class="detail-row">
+        <span class="detail-label">Ref</span>
+        <span class="detail-value"><strong>24007129</strong></span>
+      </div>
+      <div class="detail-row">
+        <span class="detail-label">Check-in</span>
+        <span class="detail-value">After 13:30</span>
+      </div>
+      <div class="detail-row">
+        <span class="detail-label">Check-out</span>
+        <span class="detail-value">Before 12:00</span>
+      </div>
+      <div class="detail-row">
+        <span class="detail-label">Reviews</span>
+        <span class="detail-value">
+          <a href="https://www.tripadvisor.com/Hotel_Review-g206522-d3225452-Reviews-Camping_Bissen-Esch_sur_Sure_Diekirch_District.html" target="_blank">
+            <span class="stars">★★★★½</span> TripAdvisor 4.5/5 · Esch-sur-Sûre
+          </a>
+        </span>
+      </div>
+      <div class="note warn">⚠️ <strong>Payment outstanding:</strong> €14.70 due by <strong>14 March 2026</strong> · €34.30 due by <strong>20 June 2026</strong>. Don't forget to fill up with fuel before leaving Luxembourg.</div>
+    </div>
+  </div>
+
+  <!-- Stop 4 — Iller Valley / Swabian Alb -->
+  <div class="card tbd">
+    <div class="card-header">
+      <div class="card-left">
+        <div class="stop-num">4</div>
+        <div class="card-info">
+          <div class="card-location">Iller Valley / Swabian Alb, Germany</div>
+          <div class="card-name">Iller Valley – TBD</div>
+          <div class="card-dates">Days 5–6 · Tue 21 Jul → Thu 23 Jul · 2 nights</div>
+        </div>
+      </div>
+      <span class="badge badge-tbd">⬜ Book</span>
+    </div>
+    <div class="card-body">
+      <div class="why-here">
+        <strong>Why here?</strong>
+        The Iller valley sits between the Swabian Alb and the Allgäu foothills, south of Ulm. The best-rated campsites in this corridor are lakeside/riverside sites in the Iller valley — significantly nicer than the A8 roadside options further north. Drive from Luxembourg via A6/A8/A7 is 4h50m–5h36m depending on site. Break in Saarbrücken (2h in) makes the longer drives very manageable. Onward to Melk (Stop 5) is ~4h46m via A8 → Munich → Salzburg → A1. 2-night stop with a rest day for day trips.
+      </div>
+      <div class="note warn">⚠️ <strong>Blautopf closed:</strong> The famous blue spring in Blaubeuren is closed for renovation until end of 2028. Still worth visiting the town — but the main attraction is off-limits.</div>
+
+      <div style="margin-top:12px;margin-bottom:4px;font-weight:700;font-size:13px;color:#1a1a1a">Campsite Options <span style="font-weight:400;font-size:11px;color:#666">(click pins on map · click name to visit site)</span></div>
+      <table class="options-table">
+        <thead>
+          <tr>
+            <th></th>
+            <th>Campsite</th>
+            <th>Rating</th>
+            <th>Price/nt</th>
+            <th>Setting &amp; location</th>
+            <th>Key facilities &amp; notes</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><span class="option-id rec">4a</span></td>
+            <td><a href="https://www.camping-christophorus.de/en/willkommen/" target="_blank" rel="noopener">Camping Christophorus</a><span class="rec-badge">REC</span></td>
+            <td>4.7/5</td>
+            <td>~€61</td>
+            <td>Three swimming lakes surrounded by forest in the Iller valley. 9 hectares. Off A7 exit Altenstadt. <strong>~5h36m from Lux</strong> (break in Saarbrücken at 2h splits it into 2h + 3h36m).</td>
+            <td><strong>Indoor pool</strong>, wellness spa (bio sauna, Finnish sauna), water slide, kids programme (late Jul–mid Aug = your dates!), restaurant, 300 touring pitches (100–120 sqm). 8.6/10 ACSI, 4.6/5 Google. Legoland 25 min. Ulm 30 min. <strong>No dogs.</strong> Onward to Melk: ~4h48m ✅</td>
+          </tr>
+          <tr>
+            <td><span class="option-id">4b</span></td>
+            <td><a href="https://www.schwarzfelder-hof.de/en/" target="_blank" rel="noopener">Schwarzfelder Hof, Leipheim</a></td>
+            <td>4.3/5</td>
+            <td>€35–51</td>
+            <td>Working farm on the Donaumoos nature reserve. Own swimming lake. 3 km from A8 exit Leipheim. <strong>~5h13m from Luxembourg.</strong></td>
+            <td>Lake swimming, farm animals (horses, stables), large playground, trampoline, play barn, farm shop. 71 touring pitches. <strong>Legoland 10 min.</strong> Toilets rated 6.7/10 — Dexter is self-contained. Onward to Melk: ~4h24m ✅</td>
+          </tr>
+          <tr>
+            <td><span class="option-id">4c</span></td>
+            <td><a href="https://www.camping-illertissen.de/en" target="_blank" rel="noopener">Camping Illertissen</a></td>
+            <td>4.2/5</td>
+            <td>~€57</td>
+            <td>On the Iller river/canal, terraced tree-shaded site. In Illertissen town, near A7. <strong>~5h27m from Luxembourg.</strong></td>
+            <td>Small outdoor pool (Jun–Sep), restaurant, family-run, modern sanitary facilities, 50 touring pitches. Quiet riverside setting. Legoland 30 min. TripAdvisor #1 in Illertissen. Onward to Melk: ~4h46m ✅</td>
+          </tr>
+          <tr>
+            <td><span class="option-id">4d</span></td>
+            <td><a href="https://waldpark-hohenstadt.de/" target="_blank" rel="noopener">Camping Waldpark Hohenstadt</a></td>
+            <td>4.1/5</td>
+            <td>€23–25</td>
+            <td>Wooded hilltop, 820m, quiet Swabian Alb. ~2 km from A8. <strong>~4h50m from Luxembourg</strong> (shortest drive).</td>
+            <td>Italian restaurant, kids programme (Jul), WiFi. <strong>Best value option.</strong> Legoland 40 min. Ulm 25 min. Onward to Melk: ~4h43m ✅</td>
+          </tr>
+        </tbody>
+      </table>
+      <div class="detail-row">
+        <span class="detail-label">Day trips</span>
+        <span class="detail-value">Legoland Günzburg (10–40 min) · Ulm (25–30 min) · Swabian Alb caves &amp; hiking · Blaubeuren town</span>
+      </div>
+      <div class="detail-row">
+        <span class="detail-label">Break stop</span>
+        <span class="detail-value">Saarbrücken (2h from Luxembourg) — coffee, pretzels, stretch legs. Splits the longer drives nicely.</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Stop 5 — Wachau -->
+  <div class="card tbd">
+    <div class="card-header">
+      <div class="card-left">
+        <div class="stop-num">5</div>
+        <div class="card-info">
+          <div class="card-location">Melk, Wachau Valley, Austria</div>
+          <div class="card-name">Wachau – TBD</div>
+          <div class="card-dates">Day 7 · Thu 23 Jul → Fri 24 Jul · 1 night</div>
+        </div>
+      </div>
+      <span class="badge badge-tbd">⬜ Book</span>
+    </div>
+    <div class="card-body">
+      <div class="why-here">
+        <strong>Why here?</strong>
+        The Wachau Valley is a UNESCO World Heritage Danube gorge between Melk and Krems. Melk Abbey is one of Europe's finest Baroque monasteries, perched on a cliff above the Danube. ~4h45m from the Swabian Alb via A8/Munich/Salzburg/A1, and only ~4h10m to the Hungaroring via A1 → Vienna → A4/M1. Wine country, apricot orchards, and riverside cycling.
+      </div>
+
+      <div style="margin-top:12px;margin-bottom:4px;font-weight:700;font-size:13px;color:#1a1a1a">Campsite Options <span style="font-weight:400;font-size:11px;color:#666">(click pins on map · click name to visit site)</span></div>
+      <table class="options-table">
+        <thead>
+          <tr>
+            <th></th>
+            <th>Campsite</th>
+            <th>Rating</th>
+            <th>Price/nt</th>
+            <th>Setting</th>
+            <th>Key draw</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><span class="option-id rec">5a</span></td>
+            <td><a href="https://www.wachaucamping-schoenbuehel.at/" target="_blank" rel="noopener">Wachau Camping Schönbühel</a><span class="rec-badge">REC</span></td>
+            <td>5/5</td>
+            <td>€41–49</td>
+            <td>Beneath Schönbühel Castle, right on the Danube</td>
+            <td>Restaurant, river swimming, 16A electric incl., online booking</td>
+          </tr>
+          <tr>
+            <td><span class="option-id">5b</span></td>
+            <td><a href="https://www.visitmelk.com/en/melk-besuchen/unterbringung/campingplatz" target="_blank" rel="noopener">Campingplatz Melk</a></td>
+            <td>4.1/5</td>
+            <td>€33–40</td>
+            <td>Danube riverbank, next to ferry pier</td>
+            <td>Closest to Melk Abbey (15 min walk). Basic facilities. Phone booking only</td>
+          </tr>
+          <tr>
+            <td><span class="option-id">5c</span></td>
+            <td><a href="https://wachaucamping-rossatz.at/" target="_blank" rel="noopener">Wachau Camping Rossatz</a></td>
+            <td>3.7/5</td>
+            <td>€41–46</td>
+            <td>Opposite Dürnstein, Danube bank</td>
+            <td>Most scenic views. Ferry to Dürnstein. Phone booking only</td>
+          </tr>
+          <tr>
+            <td><span class="option-id">5d</span></td>
+            <td><a href="https://www.campingkrems.at/en/" target="_blank" rel="noopener">ÖAMTC Donau Camping Krems</a></td>
+            <td>3.5/5</td>
+            <td>€55</td>
+            <td>Yacht harbour, Krems town edge</td>
+            <td>Online booking, bike rental, pool nearby. Most expensive</td>
+          </tr>
+        </tbody>
+      </table>
+      <div class="detail-row">
+        <span class="detail-label">Evening</span>
+        <span class="detail-value">Visit Melk Abbey or cycle the Danube towpath (flat, scenic, well-signed)</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== RACE WEEKEND ===== -->
+  <div class="route-section">🏁 Race Weekend</div>
+
+  <!-- Stop 6 — Hungaroring -->
+  <div class="card booked">
+    <div class="card-header">
+      <div class="card-left">
+        <div class="stop-num">6</div>
+        <div class="card-info">
+          <div class="card-location">Hungaroring, Hungary</div>
+          <div class="card-name">Camping Zengo</div>
+          <div class="card-dates">Days 8–10 · Fri 24 Jul → Mon 27 Jul · 3 nights · 🏁 Race: Sun 26 Jul 15:00</div>
+        </div>
+      </div>
+      <span class="badge badge-booked">✅ Booked</span>
+    </div>
+    <div class="card-body">
+      <div class="why-here">
+        <strong>Why here?</strong>
+        The whole reason for the trip. Hungarian Grand Prix at the Hungaroring. Camping Zengo is the F1 official campsite directly next to Gate 6 — 100m to track access. You agreed no way you're driving 2.5 hrs the night of the race — set off Monday morning instead.
+      </div>
+      <div class="detail-row">
+        <span class="detail-label">Cost</span>
+        <span class="detail-value cost-highlight">€45/nt · €135 total</span>
+      </div>
+      <div class="detail-row">
+        <span class="detail-label">Extra</span>
+        <span class="detail-value">+ €15/nt electricity · + €1/person/nt visitor tax</span>
+      </div>
+      <div class="detail-row">
+        <span class="detail-label">Site</span>
+        <span class="detail-value"><a href="https://zengocamping.hu/en/" target="_blank">zengocamping.hu</a></span>
+      </div>
+      <div class="detail-row">
+        <span class="detail-label">Ref</span>
+        <span class="detail-value"><em>— add booking ref here —</em></span>
+      </div>
+      <div class="note success">✅ Open Wed 10am → Mon 10am race week. Staff speak EN/DE/HU. Bring printed or digital confirmation + passports/IDs for all 4.</div>
+    </div>
+  </div>
+
+  <!-- ===== RETURN ===== -->
+  <div class="route-section">⬆ Return Route</div>
+
+  <!-- Stop 7 — Klosterneuburg -->
+  <div class="card booked">
+    <div class="card-header">
+      <div class="card-left">
+        <div class="stop-num">7</div>
+        <div class="card-info">
+          <div class="card-location">Klosterneuburg, Austria</div>
+          <div class="card-name">Donaupark Camping</div>
+          <div class="card-dates">Day 11 · Mon 27 Jul → Tue 28 Jul · 1 night</div>
+        </div>
+      </div>
+      <span class="badge badge-booked">✅ Booked</span>
+    </div>
+    <div class="card-body">
+      <div class="why-here">
+        <strong>Why here?</strong>
+        Recovery day after the race. The campsite is 5 mins walk from a train station with direct services into central Vienna (14 km, ~20 mins). Also on the route here is Melk Abbey — a Baroque monastery perched dramatically on a Danube clifftop that you had marked as a mandatory stop.
+      </div>
+      <div class="detail-row">
+        <span class="detail-label">Cost</span>
+        <span class="detail-value cost-highlight">€38</span>
+      </div>
+      <div class="detail-row">
+        <span class="detail-label">Ref</span>
+        <span class="detail-value"><em>not included in confirmation email — check booking account</em></span>
+      </div>
+      <div class="detail-row">
+        <span class="detail-label">Check-in</span>
+        <span class="detail-value">From 12:00 · barrier operates until 22:00</span>
+      </div>
+      <div class="detail-row">
+        <span class="detail-label">Reviews</span>
+        <span class="detail-value">
+          <a href="https://www.tripadvisor.com/Hotel_Review-g190423-d1994672-Reviews-Donaupark_Camping_Klosterneuburg-Klosterneuburg_Lower_Austria.html" target="_blank">
+            <span class="stars">★★★★</span> TripAdvisor 4/5 · 88 reviews · #1 in Klosterneuburg
+          </a>
+        </span>
+      </div>
+      <div class="note">On the Danube cycle path. On-site restaurant, free WiFi. Open 15 Mar – 17 Nov.</div>
+    </div>
+  </div>
+
+  <!-- Stop 8 — Nuremberg -->
+  <div class="card booked">
+    <div class="card-header">
+      <div class="card-left">
+        <div class="stop-num">8</div>
+        <div class="card-info">
+          <div class="card-location">Nuremberg, Germany</div>
+          <div class="card-name">KNAUS Campingpark</div>
+          <div class="card-dates">Day 12 · Tue 28 Jul → Wed 29 Jul · 1 night</div>
+        </div>
+      </div>
+      <span class="badge badge-booked">✅ Booked</span>
+    </div>
+    <div class="card-body">
+      <div class="why-here">
+        <strong>Why here?</strong>
+        You want to explore Nuremberg's medieval Old Town — one of Germany's best-preserved walled cities with a stunning castle, Nazi Documentation Centre, and the old market. KNAUS is in Dutzendteich park 5 km from the centre with a metro stop on site (~15 mins into town). Also the launchpad next morning for Rothenburg ob der Tauber lunch stop.
+      </div>
+      <div class="detail-row">
+        <span class="detail-label">Cost</span>
+        <span class="detail-value cost-highlight">€76 total (€38 paid · €38 on arrival)</span>
+      </div>
+      <div class="detail-row">
+        <span class="detail-label">Ref</span>
+        <span class="detail-value"><em>not included in confirmation email — check booking account</em></span>
+      </div>
+      <div class="detail-row">
+        <span class="detail-label">Reviews</span>
+        <span class="detail-value">
+          <a href="https://www.tripadvisor.com/Hotel_Review-g187310-d4457990-Reviews-Knaus_Campingpark-Nuremberg_Middle_Franconia_Franconia_Bavaria.html" target="_blank">
+            <span class="stars">★★★</span> TripAdvisor 3/5 · 101 reviews
+          </a>
+        </span>
+      </div>
+      <div class="note warn">⚠️ <strong>€38 to pay on arrival.</strong> Reviews are mixed but late July avoids the main event weekends.</div>
+    </div>
+  </div>
+
+  <!-- Stop 9 — Koblenz -->
+  <div class="card booked">
+    <div class="card-header">
+      <div class="card-left">
+        <div class="stop-num">9</div>
+        <div class="card-info">
+          <div class="card-location">Koblenz, Germany</div>
+          <div class="card-name">Camping Gülser Moselbogen</div>
+          <div class="card-dates">Day 13 · Wed 29 Jul → Thu 30 Jul · 1 night</div>
+        </div>
+      </div>
+      <span class="badge badge-booked">✅ Booked</span>
+    </div>
+    <div class="card-body">
+      <div class="why-here">
+        <strong>Why here?</strong>
+        Rest day in the Rhine Valley — where the Rhine and Moselle rivers meet at the dramatic Deutsches Eck corner. You had Burg Eltz marked as a must-see: a 12th-century castle hidden in the Moselle Valley woods, still owned by the same family after 33 generations. Cycle path from the campsite straight into Koblenz.
+      </div>
+      <div class="detail-row">
+        <span class="detail-label">Cost</span>
+        <span class="detail-value cost-highlight">€52 · Pay on arrival</span>
+      </div>
+      <div class="detail-row">
+        <span class="detail-label">Ref</span>
+        <span class="detail-value"><strong>114170</strong></span>
+      </div>
+      <div class="detail-row">
+        <span class="detail-label">Check-in</span>
+        <span class="detail-value">From 14:00 · reception open until 18:30</span>
+      </div>
+      <div class="detail-row">
+        <span class="detail-label">Check-out</span>
+        <span class="detail-value">Before 11:00</span>
+      </div>
+      <div class="detail-row">
+        <span class="detail-label">Reviews</span>
+        <span class="detail-value">
+          <a href="https://www.tripadvisor.com/Hotel_Review-g187391-d2173156-Reviews-Gulser_Moselbogen-Koblenz_Rhineland_Palatinate.html" target="_blank">
+            <span class="stars">★★★★</span> TripAdvisor 4/5 · #3 of 19 in Koblenz
+          </a>
+        </span>
+      </div>
+      <div class="note">Huge 100m² pitches, 16amp electric, free WiFi.</div>
+    </div>
+  </div>
+
+  <!-- Stop 10 — Brussels -->
+  <div class="card tbd">
+    <div class="card-header">
+      <div class="card-left">
+        <div class="stop-num">10</div>
+        <div class="card-info">
+          <div class="card-location">Brussels, Belgium</div>
+          <div class="card-name">TBD — Decision needed</div>
+          <div class="card-dates">Day 14 · Thu 30 Jul → Fri 31 Jul · 1 night</div>
+        </div>
+      </div>
+      <span class="badge badge-tbd">⬜ Decide</span>
+    </div>
+    <div class="card-body">
+      <div class="why-here">
+        <strong>Why here?</strong>
+        You both want to see Brussels — Grand Place, Manneken Pis, Belgian beer. Plan is to arrive in the afternoon, explore the city, then sleep. Good news: there's a dedicated motorhome aire in Anderlecht (effectively inner-Brussels) that's 250m from the metro with a direct line into the city centre.
+      </div>
+
+      <div class="alt-block">
+        <div class="alt-block-title">Three options — pick one</div>
+
+        <div class="alt-option alternative">
+          <div class="alt-option-label">⭐ Option A — Camp in Brussels, Anderlecht (recommended)</div>
+          <p><strong>Camp in Brussels</strong> · <strong>€10/night</strong> · <a href="https://www.campinbrussels.com/" target="_blank">campinbrussels.com</a></p>
+          <p style="margin-top:4px">13 Rue Félicien Rops, 1070 Anderlecht · <a href="https://www.campercontact.com/en/belgium/brussels/100261/camp-in-brussels" target="_blank">Campercontact ★★★★ 4.3/5 · 64 reviews</a></p>
+          <div class="alt-pros-cons">
+            <span class="pro">✓ Only €10/night — cheapest option by far</span>
+            <span class="pro">✓ 250m from metro stations Bizet &amp; Veeweyde (Line 5) — direct to city centre in minutes</span>
+            <span class="pro">✓ 24 spaces — much easier to get a spot than Generation Europe</span>
+            <span class="pro">✓ Book online — campinbrussels.com (check-in 1pm–10pm)</span><br>
+            <span class="con">✗ No services (no electric, water, or waste hookup — Dexter must be self-sufficient)</span>
+            <span class="con">✗ "Camping behaviour not allowed" — parking area vibe, not a full campsite (no outdoor chairs/cooking)</span>
+            <span class="con">✗ Motorhomes must have complete onboard sanitary facilities to be admitted</span>
+          </div>
+        </div>
+
+        <div class="alt-option current">
+          <div class="alt-option-label">Option B — Camping Grimbergen (13 km out)</div>
+          <p><strong>Camping Grimbergen</strong> · ~€40/night · <a href="https://campinggrimbergen.be/en/" target="_blank">campinggrimbergen.be</a></p>
+          <p style="margin-top:4px"><a href="https://www.tripadvisor.com/Hotel_Review-g2208382-d1486106-Reviews-Camping_Grimbergen-Grimbergen_Flemish_Brabant_Province.html" target="_blank"><span class="stars">★★★</span> TripAdvisor 3/5 · 94 reviews — reviewers say convenient for Brussels</a></p>
+          <div class="alt-pros-cons">
+            <span class="pro">✓ Proper campsite, full facilities, electric hookup</span>
+            <span class="pro">✓ Bus 232 (200m from site) → Brussels North, ~45 mins</span><br>
+            <span class="con">✗ 4× the price of Option A</span>
+            <span class="con">✗ 45–60 min each way on the bus — a faff for a short visit</span>
+            <span class="con">✗ Need to email for booking — no online booking</span>
+            <span class="con">✗ Last bus back on Thursday evening could be restrictive — check timetable</span>
+          </div>
+        </div>
+
+        <div class="alt-option alternative">
+          <div class="alt-option-label">Option C — Hotel night in the city</div>
+          <p><strong>Park Dexter free at Delta P+R</strong> — no height barriers, Metro Line 5 direct into the centre (~20 min). Sleep in a proper hotel.</p>
+          <p style="margin-top:8px"><strong>Good picks for 4 people:</strong></p>
+          <ul style="margin:6px 0 0 16px; line-height:1.9">
+            <li><a href="https://www.tripadvisor.com/Hotel_Review-g188644-d10131790-Reviews-Hotel_Agora_Brussels_Grand_Place-Brussels.html" target="_blank"><strong>Hotel Agora Brussels Grand Place</strong></a> <span class="stars">★★★★</span> — quadruple rooms, 1 block from Grand Place</li>
+            <li><a href="https://all.accor.com/hotel/2122/index.en.shtml" target="_blank"><strong>Novotel Brussels City Centre</strong></a> — family rooms for 4, 5 min walk to Grand Place, reliable</li>
+            <li><a href="https://www.tripadvisor.com/Hotel_Review-g188644-d7257444-Reviews-Hilton_Brussels_Grand_Place-Brussels.html" target="_blank"><strong>Hilton Brussels Grand Place</strong></a> <span class="stars">★★★★½</span> — treat yourselves option</li>
+          </ul>
+          <div class="alt-pros-cons" style="margin-top:8px">
+            <span class="pro">✓ Best city experience — stay central, explore morning too before driving to Calais</span>
+            <span class="pro">✓ Dexter parked free at Delta P+R (no height limit, Metro Line 5)</span>
+            <span class="pro">✓ No late-night metro back to a campsite — just walk to bed</span><br>
+            <span class="con">✗ Most expensive — family room ~€150–250 in July</span>
+            <span class="con">✗ Check Delta P+R has space for Dexter's size before committing</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="note tip" style="margin-top:12px">💡 It's one night — worth treating yourselves. Hotel (Option C) gives the best Brussels experience with Dexter parked free at Delta P+R. Camp in Brussels (Option A) is the budget pick at €10 with metro 250m away. Check hotel prices on Booking.com for 30 Jul — July prices vary a lot.</div>
+    </div>
+  </div>
+
+  <!-- Stop 11 — Calais -->
+  <div class="card booked">
+    <div class="card-header">
+      <div class="card-left">
+        <div class="stop-num">11</div>
+        <div class="card-info">
+          <div class="card-location">Calais, France</div>
+          <div class="card-name">Château du Gandspette</div>
+          <div class="card-dates">Day 15 · Fri 31 Jul → Sat 1 Aug · 1 night</div>
+        </div>
+      </div>
+      <span class="badge badge-booked">✅ Booked</span>
+    </div>
+    <div class="card-body">
+      <div class="why-here">
+        <strong>Why here?</strong>
+        Final night before home. 30 mins from the Channel Tunnel. Last chance for a proper French dinner and picking up wine and bread to bring back. Nothing too demanding — just a comfortable landing before the tunnel crossing on 1 August.
+      </div>
+      <div class="detail-row">
+        <span class="detail-label">Cost</span>
+        <span class="detail-value cost-highlight">€66.30 · PAID in full ✅</span>
+      </div>
+      <div class="detail-row">
+        <span class="detail-label">Ref</span>
+        <span class="detail-value"><strong>17760062</strong></span>
+      </div>
+      <div class="detail-row">
+        <span class="detail-label">Check-in</span>
+        <span class="detail-value">From 13:30 to 21:00</span>
+      </div>
+      <div class="detail-row">
+        <span class="detail-label">Reviews</span>
+        <span class="detail-value">
+          <a href="https://www.tripadvisor.com/Hotel_Review-g1202697-d4071197-Reviews-Camping_Chateau_De_Gandspette-Eperlecques_Pas_de_Calais_Hauts_de_France.html" target="_blank">
+            <span class="stars">★★★★</span> TripAdvisor 4/5 · 207 reviews · #1 in Éperlecques
+          </a>
+        </span>
+      </div>
+      <div class="note success">✅ Paid in full — nothing outstanding. 4★ in 19th-century château grounds, 11 ha of wooded parkland. Heated pool. Reception closed 22:30–01:30 — don't arrive too late.</div>
+    </div>
+  </div>
+
+  <!-- Stop 12 — Folkestone return -->
+  <div class="card booked">
+    <div class="card-header">
+      <div class="card-left">
+        <div class="stop-num">12</div>
+        <div class="card-info">
+          <div class="card-location">Folkestone, UK</div>
+          <div class="card-name">The Doghouse Pub (return)</div>
+          <div class="card-dates">Day 16 · Sat 1 Aug → Sun 2 Aug · optional</div>
+        </div>
+      </div>
+      <span class="badge badge-booked">✅ Confirmed</span>
+    </div>
+    <div class="card-body">
+      <div class="why-here">
+        <strong>Why here?</strong>
+        Only needed if you come through the tunnel too late or too tired to drive the 4.5 hrs back to Bolton. Avoids a knackered motorway slog at midnight after 16 days away.
+      </div>
+      <div class="note">Max 3 vans — confirm availability if you think you'll need it.</div>
+    </div>
+  </div>
+
+  <!-- Cost Summary -->
+  <div class="summary-card">
+    <h2>Cost Estimate</h2>
+    <div class="summary-row"><span class="label">Eurotunnel return</span><span class="amount">£460 ✅ paid</span></div>
+    <div class="summary-row"><span class="label">Camping Memling (Bruges)</span><span class="amount">€110 ✅ paid</span></div>
+    <div class="summary-row"><span class="label">Camping Bissen (Luxembourg)</span><span class="amount">€49 ⚠️ balance due</span></div>
+    <div class="summary-row"><span class="label">Swabian Alb / Blaubeuren (TBD)</span><span class="amount">TBD</span></div>
+    <div class="summary-row"><span class="label">Wachau / Melk, Austria (TBD)</span><span class="amount">TBD</span></div>
+    <div class="summary-row"><span class="label">Camping Zengo (Hungaroring)</span><span class="amount">~€135 + extras</span></div>
+    <div class="summary-row"><span class="label">Donaupark Camping (Klosterneuburg)</span><span class="amount">€38</span></div>
+    <div class="summary-row"><span class="label">KNAUS Campingpark (Nuremberg)</span><span class="amount">€76 (€38 on-site)</span></div>
+    <div class="summary-row"><span class="label">Camping Gülser Moselbogen (Koblenz)</span><span class="amount">€52 (pay on arrival)</span></div>
+    <div class="summary-row"><span class="label">Brussels (TBD)</span><span class="amount">~€10</span></div>
+    <div class="summary-row"><span class="label">Château du Gandspette (Calais)</span><span class="amount">€66.30 ✅ paid</span></div>
+    <div class="summary-row"><span class="label">Fuel (~8L/100km @ €1.58/L)</span><span class="amount">~€500</span></div>
+    <div class="summary-row"><span class="label">Vignettes (AT €10 + HU €16)</span><span class="amount">~€26</span></div>
+    <div class="summary-total"><span>Total estimate</span><span class="amount">~€1,060 + TBDs</span></div>
+  </div>
+
+  <!-- Outstanding items -->
+  <div class="checklist">
+    <h2>Outstanding Decisions</h2>
+    <div class="check-item"><div class="check-box" style="background:#16a34a"></div><span>✅ <strong>Koblenz confirmed</strong> — Ref 114170, pay on arrival.</span></div>
+    <div class="check-item"><div class="check-box"></div><span>⚠️ <strong>URGENT — Pay Bissen balance:</strong> €14.70 due by <strong>14 March 2026</strong> · €34.30 due by <strong>20 June 2026</strong>.</span></div>
+    <div class="check-item"><div class="check-box"></div><span><strong>Stop 4 — Swabian Alb (Blaubeuren area):</strong> Find and book campsite near Blaubeuren or Ulm (2 nights, 21–23 Jul). ~4h50m from Luxembourg via A6/A8. Try: Campingplatz Blaubeuren, Camping Friedrichsau (Ulm), Donaupark Camping (Neu-Ulm).</span></div>
+    <div class="check-item"><div class="check-box"></div><span><strong>Stop 5 — Wachau (Melk area):</strong> Find and book campsite in the Wachau Valley (1 night, 23–24 Jul). ~4h45m from Swabian Alb via A8/Munich/Salzburg/A1. Try: Camping Melk, Camping Rossatz (opposite Dürnstein), Donaupark Camping Krems.</span></div>
+    <div class="check-item"><div class="check-box"></div><span><strong>Stop 10 — Brussels:</strong> Book <a href="https://www.campinbrussels.com/" target="_blank">Camp in Brussels</a>, Anderlecht — €10/night, 250m from metro (Line 5). Dexter must be fully self-contained.</span></div>
+    <div class="check-item"><div class="check-box"></div><span><strong>The Doghouse:</strong> Email to confirm free car park (max 3 vans, outbound &amp; return).</span></div>
+    <div class="check-item"><div class="check-box"></div><span><strong>Camping Zengo:</strong> Add booking reference number when received.</span></div>
+    <div class="check-item"><div class="check-box"></div><span><strong>Donaupark / KNAUS:</strong> Locate booking references — not included in confirmation emails.</span></div>
+  </div>
+
+  <!-- Mandatory stops -->
+  <div class="stops-card">
+    <h2>En Route Stops (Stuttgart route)</h2>
+    <div class="stop-item"><div class="stop-icon">🏙️</div><div class="stop-text"><strong>Stuttgart, Germany</strong><span>Day 3 drive-through — en route Luxembourg → Swabian Alb via A6/A8. Mercedes-Benz Museum if there's time.</span></div></div>
+    <div class="stop-item"><div class="stop-icon">💎</div><div class="stop-text"><strong>Blautopf, Blaubeuren</strong><span>Day 4 rest day — stunning blue karst spring. Also: Ulm (30 min, tallest church spire), Legoland Günzburg (40 min), Swabian Alb caves.</span></div></div>
+    <div class="stop-item"><div class="stop-icon">🏰</div><div class="stop-text"><strong>Melk Abbey, Austria</strong><span>Day 7 overnight — baroque monastery perched above the Danube. UNESCO Wachau Valley: wine, apricots, riverside cycling.</span></div></div>
+    <div class="stop-item"><div class="stop-icon">🏛️</div><div class="stop-text"><strong>Vienna, Austria</strong><span>Day 8 drive-through — en route Melk → Hungaroring via A1/A4/M1. Schönbrunn, Ringstraße, Prater — worth an early start and a brief stop.</span></div></div>
+    <div class="stop-item"><div class="stop-icon">🍷</div><div class="stop-text"><strong>Rothenburg ob der Tauber</strong><span>Return lunch stop from Nuremberg — Germany's best-preserved medieval walled town.</span></div></div>
+    <div class="stop-item"><div class="stop-icon">⛩️</div><div class="stop-text"><strong>Cologne Cathedral</strong><span>45-min stop Day 14 — Gothic masterpiece, en route Koblenz → Brussels.</span></div></div>
+  </div>
+
+  <div class="footer">
+    Cork Family Road Trip 2026 · Updated March 2026
+  </div>
+
+</div>
+
+<script src='https://api.mapbox.com/mapbox-gl-js/v3.8.0/mapbox-gl.js'></script>
+<script>
+(function () {
+  const TOKEN = 'pk.eyJ1IjoiYnlzaXh0ZWVuIiwiYSI6ImNta3U5amtndTF0NDgzZnNlMmlwdjEwdjkifQ.PWuMX7VkQqP-L6IYTGeyGA';
+
+  const STOPS = [
+    { num: 1,  name: 'The Doghouse Pub',          loc: 'Folkestone, UK',         dates: '17–18 Jul',    coords: [1.1754,  51.0802], status: 'booked' },
+    { num: 2,  name: 'Camping Memling',            loc: 'Bruges, Belgium',        dates: '18–20 Jul',    coords: [3.2244,  51.1975], status: 'booked' },
+    { num: 3,  name: 'Camping Bissen',             loc: 'Luxembourg',             dates: '20–21 Jul',    coords: [5.9537,  49.8714], status: 'booked' },
+    { num: 4,  name: 'Swabian Alb – TBD',            loc: 'Blaubeuren, Germany',    dates: '21–23 Jul',    coords: [9.75,    48.51  ], status: 'tbd' },
+    { num: 5,  name: 'Wachau – TBD',                loc: 'Melk, Austria',          dates: '23–24 Jul',    coords: [15.33,   48.22  ], status: 'tbd' },
+    { num: 6,  name: 'Camping Zengo',              loc: 'Hungaroring, Hungary',   dates: '24–27 Jul',    coords: [19.2506, 47.5789], status: 'booked' },
+    { num: 7,  name: 'Donaupark Camping',          loc: 'Klosterneuburg, AT',     dates: '27–28 Jul',    coords: [16.3301, 48.3052], status: 'booked' },
+    { num: 8,  name: 'KNAUS Campingpark',          loc: 'Nuremberg, DE',          dates: '28–29 Jul',    coords: [11.1033, 49.4155], status: 'booked' },
+    { num: 9,  name: 'Camping Gülser Moselbogen',  loc: 'Koblenz, DE',            dates: '29–30 Jul',    coords: [7.5831,  50.3453], status: 'booked' },
+    { num: 10, name: 'Brussels – TBD',             loc: 'Belgium',                dates: '30–31 Jul',    coords: [4.3517,  50.8503], status: 'tbd' },
+    { num: 11, name: 'Château du Gandspette',      loc: 'Calais, France',         dates: '31 Jul–1 Aug', coords: [2.1538,  50.7893], status: 'booked' },
+  ];
+
+  const CAMPSITE_OPTIONS = [
+    // Stop 4 — Iller Valley / Swabian Alb (deep search)
+    { stop: 4, id: '4a', name: 'Camping Christophorus',          coords: [10.1031, 48.1392], rating: '4.7/5', price: '€61/nt',    url: 'https://www.camping-christophorus.de/en/willkommen/', rec: true },
+    { stop: 4, id: '4b', name: 'Schwarzfelder Hof',              coords: [10.2034, 48.4647], rating: '4.3/5', price: '€35–51/nt', url: 'https://www.schwarzfelder-hof.de/en/' },
+    { stop: 4, id: '4c', name: 'Camping Illertissen',            coords: [10.0880, 48.2122], rating: '4.2/5', price: '€57/nt',    url: 'https://www.camping-illertissen.de/en' },
+    { stop: 4, id: '4d', name: 'Camping Waldpark Hohenstadt',    coords: [9.6679, 48.5496],  rating: '4.1/5', price: '€23–25/nt', url: 'https://waldpark-hohenstadt.de/' },
+    // Stop 5 — Wachau
+    { stop: 5, id: '5a', name: 'Wachau Camping Schönbühel',    coords: [15.3710, 48.2542], rating: '5/5',   price: '€41–49/nt', url: 'https://www.wachaucamping-schoenbuehel.at/', rec: true },
+    { stop: 5, id: '5b', name: 'Campingplatz Melk',            coords: [15.3283, 48.2326], rating: '4.1/5', price: '€33–40/nt', url: 'https://www.visitmelk.com/en/melk-besuchen/unterbringung/campingplatz' },
+    { stop: 5, id: '5c', name: 'Wachau Camping Rossatz',       coords: [15.5168, 48.3905], rating: '3.7/5', price: '€41–46/nt', url: 'https://wachaucamping-rossatz.at/' },
+    { stop: 5, id: '5d', name: 'ÖAMTC Donau Camping Krems',   coords: [15.5924, 48.4039], rating: '3.5/5', price: '€55/nt',    url: 'https://www.campingkrems.at/en/' },
+  ];
+
+  const COLOUR = { booked: '#16a34a', tbd: '#d97706', preliminary: '#ef4444' };
+
+  mapboxgl.accessToken = TOKEN;
+
+  const map = new mapboxgl.Map({
+    container: 'trip-map',
+    style: 'mapbox://styles/mapbox/outdoors-v12',
+    center: [10, 49],
+    zoom: 4,
+  });
+
+  map.addControl(new mapboxgl.NavigationControl(), 'top-right');
+
+  // Fit bounds to all stops
+  const bounds = new mapboxgl.LngLatBounds();
+  STOPS.forEach(s => bounds.extend(s.coords));
+  map.fitBounds(bounds, { padding: 50, maxZoom: 7 });
+
+  // Add markers
+  STOPS.forEach((stop, i) => {
+    const el = document.createElement('div');
+    el.className = 'map-stop-marker';
+    el.style.backgroundColor = COLOUR[stop.status] || '#6b7280';
+    el.textContent = stop.num;
+
+    const popup = new mapboxgl.Popup({ offset: 28, closeButton: false })
+      .setHTML(`
+        <div style="font-family:-apple-system,sans-serif;padding:4px 2px;min-width:160px">
+          <div style="font-weight:700;font-size:13px;margin-bottom:2px">${stop.name}</div>
+          <div style="font-size:11px;color:#666;margin-bottom:4px">${stop.loc} · ${stop.dates}</div>
+          <div id="seg-${i}" style="font-size:11px;color:#3b82f6"></div>
+        </div>
+      `);
+
+    new mapboxgl.Marker(el)
+      .setLngLat(stop.coords)
+      .setPopup(popup)
+      .addTo(map);
+  });
+
+  // Add campsite option markers
+  CAMPSITE_OPTIONS.forEach(opt => {
+    const el = document.createElement('div');
+    el.className = 'map-option-marker' + (opt.rec ? ' rec' : '');
+    el.textContent = opt.id;
+
+    const popup = new mapboxgl.Popup({ offset: 18, closeButton: false })
+      .setHTML(`
+        <div style="font-family:-apple-system,sans-serif;padding:4px 2px;min-width:200px">
+          <div style="font-weight:700;font-size:13px;margin-bottom:2px">${opt.name}</div>
+          <div style="font-size:11px;color:#666;margin-bottom:4px">Stop ${opt.stop} option · ${opt.rating} · ${opt.price}</div>
+          <a href="${opt.url}" target="_blank" rel="noopener" style="font-size:11px;color:#3b82f6">Visit website →</a>
+        </div>
+      `);
+
+    new mapboxgl.Marker(el)
+      .setLngLat(opt.coords)
+      .setPopup(popup)
+      .addTo(map);
+  });
+
+  // Fetch route and draw line + drive times
+  map.on('load', () => {
+    const coords = STOPS.map(s => s.coords.join(',')).join(';');
+    const url = `https://api.mapbox.com/directions/v5/mapbox/driving/${coords}?geometries=geojson&overview=full&steps=false&access_token=${TOKEN}`;
+
+    fetch(url)
+      .then(r => r.json())
+      .then(data => {
+        if (!data.routes || !data.routes[0]) return;
+        const route = data.routes[0];
+
+        // Draw route line
+        map.addSource('route', {
+          type: 'geojson',
+          data: { type: 'Feature', properties: {}, geometry: route.geometry }
+        });
+        map.addLayer({
+          id: 'route',
+          type: 'line',
+          source: 'route',
+          layout: { 'line-join': 'round', 'line-cap': 'round' },
+          paint: { 'line-color': '#3b82f6', 'line-width': 3, 'line-opacity': 0.75 }
+        });
+
+        // Update popups and build drive times grid
+        const grid = document.getElementById('drive-times-grid');
+        route.legs.forEach((leg, i) => {
+          const km = Math.round(leg.distance / 1000);
+          const hrs = Math.floor(leg.duration / 3600);
+          const mins = Math.round((leg.duration % 3600) / 60);
+          const dur = hrs > 0 ? `${hrs}h ${mins}min` : `${mins}min`;
+          const from = STOPS[i];
+          const to = STOPS[i + 1];
+          const durColour = leg.duration > 5 * 3600 ? '#ef4444' : leg.duration > 3 * 3600 ? '#d97706' : '#16a34a';
+
+          // Update popup content
+          const el = document.getElementById(`seg-${i}`);
+          if (el) el.innerHTML = `<span style="color:${durColour}">→ ${to.name}: ${dur} · ${km} km</span>`;
+
+          // Drive time grid item
+          const item = document.createElement('div');
+          item.className = 'drive-time-item';
+          item.innerHTML = `
+            <span style="font-weight:700;color:${COLOUR[from.status] || '#6b7280'};font-size:11px">${from.num}</span>
+            <span class="drive-time-arrow">→</span>
+            <span style="font-weight:700;color:${COLOUR[to.status] || '#6b7280'};font-size:11px">${to.num}</span>
+            <span style="flex:1;font-size:11px;color:#444">${from.name.split(' ')[0]} → ${to.name.split(' ')[0]}</span>
+            <span class="drive-time-km">${km} km</span>
+            <span class="drive-time-dur" style="color:${durColour};font-weight:700">${dur}</span>
+          `;
+          grid.appendChild(item);
+        });
+      })
+      .catch(err => console.error('Route error:', err));
+  });
+})();
+</script>
+</body>
+</html>

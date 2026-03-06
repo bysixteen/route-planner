@@ -1,0 +1,6 @@
+1:"$Sreact.fragment"
+2:I[39150,["/route-planner/_next/static/chunks/7f5a5516360cbd80.js","/route-planner/_next/static/chunks/e686243d57d1cde3.js"],"ViewportBoundary"]
+3:I[39150,["/route-planner/_next/static/chunks/7f5a5516360cbd80.js","/route-planner/_next/static/chunks/e686243d57d1cde3.js"],"MetadataBoundary"]
+4:"$Sreact.suspense"
+5:I[86687,["/route-planner/_next/static/chunks/7f5a5516360cbd80.js","/route-planner/_next/static/chunks/e686243d57d1cde3.js"],"IconMark"]
+0:{"buildId":"WzUVBp5Nga0Kqq85dObeu","rsc":["$","$1","h",{"children":[["$","meta",null,{"name":"robots","content":"noindex"}],["$","$L2",null,{"children":[["$","meta","0",{"charSet":"utf-8"}],["$","meta","1",{"name":"viewport","content":"width=device-width, initial-scale=1"}]]}],["$","div",null,{"hidden":true,"children":["$","$L3",null,{"children":["$","$4",null,{"name":"Next.Metadata","children":[["$","title","0",{"children":"Route Planner"}],["$","meta","1",{"name":"description","content":"Plan your road trips, track your journey, and share your adventures."}],["$","link","2",{"rel":"icon","href":"/route-planner/favicon.ico?favicon.0b3bf435.ico","sizes":"256x256","type":"image/x-icon"}],["$","$L5","3",{}]]}]}]}],["$","meta",null,{"name":"next-size-adjust","content":""}]]}],"loading":null,"isPartial":false}
