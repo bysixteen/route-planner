@@ -1,0 +1,46 @@
+[
+  {
+    "type": "sprint",
+    "id": "sprint-000",
+    "number": "S000",
+    "topic": "Foundation — shared context, route revision, booking status",
+    "date": "2026-03-05",
+    "status": "complete",
+    "decision": "Route revised to drop Switzerland; 5 confirmed bookings updated; static HTML established as primary reference.",
+    "confidence": "high",
+    "href": "sprints/sprint-000/index.html"
+  },
+  {
+    "type": "spike",
+    "id": "spike-001",
+    "number": "S001",
+    "topic": "Outbound route stop positions",
+    "date": "2026-03-05",
+    "status": "complete",
+    "decision": "Stop 4 → Swabian Alb (Blaubeuren) [9.75, 48.51]; Stop 5 → Wachau (Melk) [15.33, 48.22]. All 3 legs ≤4h50m (Mapbox-verified). 3 iterations: Lindau/Starnberger See/Augsburg all failed the 5h limit.",
+    "confidence": "high",
+    "href": "spikes/spike-001/index.html"
+  },
+  {
+    "type": "sprint",
+    "id": "sprint-001",
+    "number": "S001",
+    "topic": "Map Interface UI — Rich Journey View",
+    "date": "2026-03-05",
+    "status": "complete",
+    "decision": "Rebuilt trip viewer as desktop two-panel layout (300px sidebar + full-height Mapbox outdoors map) with colour-coded segment time labels on the route line and a gated POI discovery toggle.",
+    "personas": ["Leo Finch", "Dr. Lena Petrova", "Marcus Thorne", "Kira Sharma", "Dr. Aris Thorne", "Rowan Vale", "Elias Vance", "Nara Shin", "Ines Alvarez"],
+    "href": "sprints/sprint-001/index.html"
+  },
+  {
+    "type": "sprint",
+    "id": "sprint-002",
+    "number": "S002",
+    "topic": "Trip Viewer Data Concepts — Information Architecture",
+    "date": "2026-03-05",
+    "status": "complete",
+    "decision": "Restructured trip viewer sidebar into three-layer IA: summary bar (trip metrics), day-grouped itinerary with booking status badges, and outbound/return section markers. Empty fields hidden, not dashed.",
+    "personas": ["Leo Finch", "Dr. Lena Petrova", "Marcus Thorne", "Kira Sharma", "Dr. Aris Thorne", "Rowan Vale", "Elias Vance", "Nara Shin", "Ines Alvarez"],
+    "href": "sprints/sprint-002/index.html"
+  }
+]

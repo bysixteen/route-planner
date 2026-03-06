@@ -1,0 +1,23 @@
+{
+  "type": "spike",
+  "spike_id": "spike-001",
+  "topic": "Outbound route — optimal positions for Stop 4 and Stop 5",
+  "spike_type": "research",
+  "date_completed": "2026-03-05",
+  "question": "Which intermediate positions for Stop 4 and Stop 5 on the outbound route (Luxembourg → Hungaroring) keep every leg within the 5-hour family driving limit?",
+  "answer": "Stop 4 → Bavaria (Starnberger See) [11.34, 47.90]; Stop 5 → Wachau Valley (Melk, Austria) [15.33, 48.22]. All three outbound legs are now ≤4.5h.",
+  "confidence": "high",
+  "summary_of_findings": "The current Lindau position for Stop 4 produced a 6.5h Mapbox routing result because Mapbox routes via Strasbourg/Alsace rather than via Saarland/Stuttgart. Moving Stop 4 to the Bavarian Lakes (east of Stuttgart on the A8 corridor) forces motorway routing and gives ~4.5h. The current Stop 5 coordinates were in the Austrian mountain foothills (Radstadt) — switching to Wachau Valley (Melk, on the Danube A1 motorway) gives ~3h from Bavaria and ~2.5h to the Hungaroring. All legs are now within the 5h family rule.",
+  "adr_reference": "None",
+  "unblocked_work": "Sprint-backlog items 001 (Stop 4 campsite search — Bavarian Lakes) and 002 (Stop 5 campsite search — Wachau Valley) can now proceed with a well-defined geographic search area.",
+  "constraints_discovered": [
+    "Mapbox routes Luxembourg → Lindau via Strasbourg/Alsace, not via Stuttgart — producing ~6.5h instead of expected ~4h. Positions east of ~9.2°E (Stuttgart) force the faster Saarland/A6/A8 corridor.",
+    "Camping Bissen (Stop 3) is in Esch-sur-Sûre in the far north of Luxembourg — drive-time estimates should use [5.9537, 49.8714], not Luxembourg City.",
+    "The old Stop 5 coordinates [12.7939, 47.2959] pointed to Radstadt in the Austrian Alps (a ski resort), not a campsite-friendly motorway location. All future stop positions should be validated against motorway accessibility, not just country or region name."
+  ],
+  "squad_participants": [
+    "Dr. Aris Thorne (Strategist)",
+    "Nara Shin (UX Researcher)",
+    "Elias Vance (Mandatory Challenger)"
+  ]
+}

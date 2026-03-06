@@ -1,0 +1,149 @@
+BEGIN:VCALENDAR
+VERSION:2.0
+PRODID:-//Cork Family Road Trip 2026//EN
+CALSCALE:GREGORIAN
+METHOD:PUBLISH
+X-WR-CALNAME:Hungarian GP Road Trip 2026
+X-WR-TIMEZONE:Europe/London
+
+BEGIN:VEVENT
+UID:eurotunnel-outbound-2026@cork-trip
+DTSTART;VALUE=DATE:20260717
+DTEND;VALUE=DATE:20260718
+SUMMARY:🚂 Eurotunnel — Outbound
+LOCATION:Folkestone Channel Tunnel Terminal, UK
+DESCRIPTION:Eurotunnel return £460 ✅ BOOKED\nDepart ~10:20 · ~35 min crossing
+STATUS:CONFIRMED
+END:VEVENT
+
+BEGIN:VEVENT
+UID:doghouse-outbound-2026@cork-trip
+DTSTART;TZID=Europe/London:20260717T170000
+DTEND;TZID=Europe/London:20260718T120000
+SUMMARY:🍺 The Doghouse Pub — Outbound
+LOCATION:The Doghouse Pub, Folkestone, UK
+DESCRIPTION:FREE overnight stop ✅ CONFIRMED\nFree car park with overnight toilets · Good food & ale\n15 mins from Eurotunnel terminal · Max 3 vans — email ahead to confirm
+STATUS:CONFIRMED
+END:VEVENT
+
+BEGIN:VEVENT
+UID:camping-memling-2026@cork-trip
+DTSTART;TZID=Europe/London:20260718T120000
+DTEND;TZID=Europe/London:20260720T113000
+SUMMARY:⛺ Camping Memling — Bruges
+LOCATION:Camping Memling\, Bruges\, Belgium
+DESCRIPTION:✅ BOOKED\nRef: RE792256C\nCost: €110 — PAID IN FULL\nCheck-in: from 12:00 until 23:00\nCheck-out: before 11:30\nWalking distance to Bruges old town (1.5km) · Bus every 10 min\nRest day 19 Jul
+STATUS:CONFIRMED
+END:VEVENT
+
+BEGIN:VEVENT
+UID:camping-bissen-2026@cork-trip
+DTSTART;TZID=Europe/London:20260720T133000
+DTEND;TZID=Europe/London:20260721T120000
+SUMMARY:⛺ Camping Bissen — Luxembourg
+LOCATION:Camping Bissen\, Esch-sur-Sûre\, Luxembourg
+DESCRIPTION:✅ BOOKED\nRef: 24007129\nCost: €49 (includes electricity)\nCheck-in: after 13:30\nCheck-out: before 12:00\n⚠️ PAYMENT OUTSTANDING:\n€14.70 due by 14 March 2026\n€34.30 due by 20 June 2026\nFill up with cheap fuel in Luxembourg before leaving!
+STATUS:CONFIRMED
+END:VEVENT
+
+BEGIN:VEVENT
+UID:swabian-alb-2026@cork-trip
+DTSTART;VALUE=DATE:20260721
+DTEND;VALUE=DATE:20260723
+SUMMARY:🏕 Swabian Alb — TBD (Blaubeuren area)
+LOCATION:Blaubeuren\, Swabian Alb\, Germany
+DESCRIPTION:⬜ TO BOOK — Swabian Alb campsite\nRoute: Luxembourg → A6 (Saarland) → Stuttgart → A8 (~4h50m)\n2 nights (21–23 Jul) — rest day 22 Jul\nDay trips: Blautopf spring\, Ulm (30 min)\, Legoland Günzburg (40 min)\nTry: Campingplatz Blaubeuren\, Camping Friedrichsau (Ulm)
+STATUS:TENTATIVE
+END:VEVENT
+
+BEGIN:VEVENT
+UID:wachau-melk-2026@cork-trip
+DTSTART;VALUE=DATE:20260723
+DTEND;VALUE=DATE:20260724
+SUMMARY:🏰 Wachau — TBD (Melk area)
+LOCATION:Melk\, Wachau Valley\, Austria
+DESCRIPTION:⬜ TO BOOK — Wachau Valley campsite\nRoute: Swabian Alb → A8 → Munich → Salzburg → A1 → Melk (~4h45m)\nMelk Abbey: baroque monastery above the Danube\nUNESCO World Heritage Danube gorge\nDrive to Hungaroring next day: A1 → Vienna → A4/M1 (~4h10m)\nTry: Camping Melk\, Camping Rossatz (Dürnstein)
+STATUS:TENTATIVE
+END:VEVENT
+
+BEGIN:VEVENT
+UID:camping-zengo-2026@cork-trip
+DTSTART;VALUE=DATE:20260724
+DTEND;VALUE=DATE:20260727
+SUMMARY:🏁 Camping Zengo — Hungaroring (Race Weekend!)
+LOCATION:Camping Zengo\, Hungaroring\, Mogyoród\, Hungary
+DESCRIPTION:✅ BOOKED\nRef: TBC — add when received\nCost: ~€135 + electricity (~€15/nt) + visitor tax (€1/person/nt)\nF1 official campsite · Gate 6 · 100m to track\nOpen Wed 10am → Mon 10am\nStaff speak EN/DE/HU\nBring printed/digital confirmation + passports for all 4\n🏁 RACE: Sunday 26 July ~15:00 local time
+STATUS:CONFIRMED
+END:VEVENT
+
+BEGIN:VEVENT
+UID:donaupark-2026@cork-trip
+DTSTART;TZID=Europe/London:20260727T120000
+DTEND;VALUE=DATE:20260728
+SUMMARY:⛺ Donaupark Camping — Klosterneuburg
+LOCATION:Donaupark Camping Klosterneuburg\, Austria
+DESCRIPTION:✅ BOOKED\nRef: TBC — not in confirmation email\nCost: €38\nCheck-in: from 12:00 · barrier until 22:00\n5 min walk to train station · Vienna 14km (~20 min train)\nOn-site restaurant · free WiFi\nMelk Abbey en route from Hungaroring
+STATUS:CONFIRMED
+END:VEVENT
+
+BEGIN:VEVENT
+UID:knaus-nuremberg-2026@cork-trip
+DTSTART;VALUE=DATE:20260728
+DTEND;VALUE=DATE:20260729
+SUMMARY:⛺ KNAUS Campingpark — Nuremberg
+LOCATION:KNAUS Campingpark Nürnberg\, Nuremberg\, Germany
+DESCRIPTION:✅ BOOKED\nRef: TBC — not in confirmation email\nCost: €76 total (€38 paid · €38 to pay on arrival)\nDutzendteich park · 3 miles from Nuremberg Old Town\nMetro stop on site (~15 min into town)\n⚠️ €38 to pay on arrival
+STATUS:CONFIRMED
+END:VEVENT
+
+BEGIN:VEVENT
+UID:guelser-moselbogen-2026@cork-trip
+DTSTART;TZID=Europe/London:20260729T140000
+DTEND;TZID=Europe/London:20260730T110000
+SUMMARY:⛺ Camping Gülser Moselbogen — Koblenz
+LOCATION:Camping Gülser Moselbogen\, Koblenz\, Germany
+DESCRIPTION:✅ BOOKED\nRef: 114170\nCost: €52 · Pay on arrival\nCheck-in: from 14:00 · reception until 18:30\nCheck-out: before 11:00\nRhine/Moselle confluence · 4km from Koblenz\n100m² pitches · 16amp electric · free WiFi\nOn-site Italian restaurant\nBurg Eltz castle nearby (must-see!)
+STATUS:CONFIRMED
+END:VEVENT
+
+BEGIN:VEVENT
+UID:brussels-tbd-2026@cork-trip
+DTSTART;VALUE=DATE:20260730
+DTEND;VALUE=DATE:20260731
+SUMMARY:🏕 Brussels — TBD
+LOCATION:Brussels\, Belgium
+DESCRIPTION:⬜ TO BOOK\nRecommended: Camp in Brussels (Anderlecht)\n€10/night · 250m from metro Line 5\nhttps://www.campinbrussels.com/\n⚠️ Dexter must be fully self-contained (no services)\nAlternative: Camping Grimbergen (~€40\, 13km out)
+STATUS:TENTATIVE
+END:VEVENT
+
+BEGIN:VEVENT
+UID:chateau-gandspette-2026@cork-trip
+DTSTART;TZID=Europe/London:20260731T133000
+DTEND;VALUE=DATE:20260801
+SUMMARY:⛺ Château du Gandspette — Calais
+LOCATION:Château du Gandspette\, Éperlecques\, Pas-de-Calais\, France
+DESCRIPTION:✅ BOOKED\nRef: 17760062\nCost: €66.30 — PAID IN FULL\nCheck-in: from 13:30 to 21:00\n4★ in 19th-century château grounds\n11 hectares of wooded parkland · Heated pool\n30 mins from Channel Tunnel\n⚠️ Reception closed 22:30–01:30 — arrive before 21:00
+STATUS:CONFIRMED
+END:VEVENT
+
+BEGIN:VEVENT
+UID:doghouse-return-2026@cork-trip
+DTSTART;VALUE=DATE:20260801
+DTEND;VALUE=DATE:20260802
+SUMMARY:🍺 The Doghouse Pub — Return (optional)
+LOCATION:The Doghouse Pub\, Folkestone\, UK
+DESCRIPTION:FREE overnight stop ✅ CONFIRMED\nOnly needed if arriving too late to drive back to Bolton\nMax 3 vans — confirm availability if planning to use
+STATUS:CONFIRMED
+END:VEVENT
+
+BEGIN:VEVENT
+UID:eurotunnel-return-2026@cork-trip
+DTSTART;VALUE=DATE:20260802
+DTEND;VALUE=DATE:20260803
+SUMMARY:🚂 Eurotunnel — Return
+LOCATION:Folkestone Channel Tunnel Terminal\, UK
+DESCRIPTION:Eurotunnel return £460 ✅ BOOKED
+STATUS:CONFIRMED
+END:VEVENT
+
+END:VCALENDAR

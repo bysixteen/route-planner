@@ -1,0 +1,41 @@
+{
+  "type": "sprint",
+  "sprint_id": "sprint-001",
+  "topic": "Map Interface UI — Rich Journey View",
+  "date_completed": "2026-03-05",
+  "long_term_goal": "Daniel opens the trip map and immediately understands the full journey — each leg's drive time and distance is visible without clicking, mandatory break points are suggested, and a discovery layer shows castles, lakes, and mountains within reach of the route.",
+  "sprint_questions": [
+    "Can we show drive time and distance for each leg on the route line without cluttering the map?",
+    "Can we surface break stop opportunities and POIs along the route without introducing a new data dependency beyond Mapbox?",
+    "Will Daniel be able to confirm at a glance that every leg is within the 5-hour limit?"
+  ],
+  "key_question_answered": "Can we show drive time and distance for each leg without cluttering the map? Yes — segment data already exists in the Directions API response; a Mapbox symbol layer at segment midpoints renders it cleanly.",
+  "key_decision": "Rebuilt the trip viewer as a desktop two-panel layout (300px itinerary sidebar + full-height Mapbox outdoors map) with colour-coded segment time labels on the route line and a gated POI discovery toggle.",
+  "squad_participants": [
+    "Leo Finch (Visual Designer)",
+    "Dr. Lena Petrova (Design Engineer)",
+    "Marcus Thorne (Senior Developer)",
+    "Kira Sharma (Developer)",
+    "Dr. Aris Thorne (Strategist)",
+    "Rowan Vale (Craftsman)",
+    "Elias Vance (Client)",
+    "Nara Shin (UX Researcher)",
+    "Ines Alvarez (UX Designer)"
+  ],
+  "elias_dissent": "Two concerns: (1) POI data quality on rural European routes via queryRenderedFeatures is inconsistent — POI layer must be validated against the actual Cork route before shipping; (2) Hannah's mobile experience is being deferred to Sprint 004, which Elias accepted but flagged as a product gap.",
+  "living_docs_updated": [
+    "research/DECISIONS.md",
+    "research/sprint-status.md",
+    "research/PRINCIPLES.md",
+    "research/dissent-register.md",
+    "site/sprints.json"
+  ],
+  "next_action": "Run the implementation sprint: build two-panel layout, segment labels, colour coding, and Mapbox outdoors style switch. Gate POI layer on data quality validation against the actual Cork route.",
+  "open_questions": [
+    "Which Mapbox outdoors style layer IDs surface castles, viewpoints, and natural landmarks for European routes?",
+    "Does queryRenderedFeatures return meaningful POIs at the zoom level needed to view the full Cork route?",
+    "How does the sidebar overflow-y interact with the existing trip page layout structure?"
+  ],
+  "ideas_count": 7,
+  "creative_brief": true
+}

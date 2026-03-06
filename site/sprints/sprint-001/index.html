@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sprint 001 — Map Interface UI: Rich Journey View | Cork GP 2026</title>
+  <link rel="stylesheet" href="../../styles.css">
+  <style>
+    /* Sprint-specific styles */
+    .sprint-hero {
+      padding: 0 0 24px;
+      border-bottom: 1px solid var(--colour-border);
+      margin-bottom: 24px;
+    }
+    .sprint-hero .sprint-label {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--colour-accent);
+      margin-bottom: 8px;
+    }
+    .sprint-hero h1 {
+      font-size: 26px;
+      font-weight: 700;
+      line-height: 1.3;
+      margin-bottom: 8px;
+    }
+    .sprint-hero .meta {
+      font-size: 13px;
+      color: var(--colour-text-muted);
+      display: flex;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+    .decision-pull {
+      background: var(--colour-green-bg);
+      border-left: 4px solid var(--colour-green);
+      padding: 20px 24px;
+      border-radius: 0 var(--radius) var(--radius) 0;
+      margin-bottom: 24px;
+    }
+    .decision-pull .label {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--colour-green);
+      margin-bottom: 8px;
+    }
+    .decision-pull p {
+      font-size: 16px;
+      font-weight: 600;
+      line-height: 1.5;
+    }
+    .feature-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-bottom: 24px;
+    }
+    .feature-card {
+      background: var(--colour-surface);
+      border: 1px solid var(--colour-border);
+      border-radius: var(--radius);
+      padding: 14px 16px;
+    }
+    .feature-card .feature-num {
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--colour-accent);
+      margin-bottom: 4px;
+    }
+    .feature-card h4 {
+      font-size: 13px;
+      font-weight: 600;
+      margin-bottom: 4px;
+    }
+    .feature-card p {
+      font-size: 12px;
+      color: var(--colour-text-muted);
+      line-height: 1.5;
+    }
+    .not-doing-list {
+      list-style: none;
+      margin: 0 0 16px;
+    }
+    .not-doing-list li {
+      padding: 8px 14px;
+      font-size: 13px;
+      border-bottom: 1px solid var(--colour-border);
+      display: flex;
+      gap: 8px;
+    }
+    .not-doing-list li:last-child { border-bottom: none; }
+    .not-doing-list li::before { content: "✕"; color: var(--colour-text-muted); flex-shrink: 0; }
+    .persona-sketches {
+      margin-bottom: 24px;
+    }
+    .persona-row {
+      display: flex;
+      gap: 12px;
+      padding: 12px 0;
+      border-bottom: 1px solid var(--colour-border);
+      font-size: 13px;
+    }
+    .persona-row:last-child { border-bottom: none; }
+    .persona-name { font-weight: 600; min-width: 160px; }
+    .persona-question { color: var(--colour-text-muted); font-style: italic; }
+    .next-action {
+      background: var(--colour-purple-bg);
+      border-left: 4px solid var(--colour-purple);
+      padding: 16px 20px;
+      border-radius: 0 var(--radius) var(--radius) 0;
+      margin-bottom: 24px;
+    }
+    .next-action .label {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--colour-purple);
+      margin-bottom: 6px;
+    }
+    .next-action p { font-size: 14px; font-weight: 500; }
+    .criteria-list { list-style: none; margin: 0 0 16px; }
+    .criteria-list li {
+      padding: 8px 14px 8px 36px;
+      position: relative;
+      font-size: 13px;
+      border-bottom: 1px solid var(--colour-border);
+    }
+    .criteria-list li:last-child { border-bottom: none; }
+    .criteria-list li::before {
+      content: counter(item);
+      counter-increment: item;
+      position: absolute;
+      left: 12px;
+      font-weight: 700;
+      color: var(--colour-accent);
+      font-size: 11px;
+    }
+    .criteria-list { counter-reset: item; }
+  </style>
+</head>
+<body data-layout="sprint" data-root="../.." data-sprint="001">
+
+<main class="site-content">
+
+  <!-- Hero -->
+  <div class="sprint-hero">
+    <div class="sprint-label">Sprint 001 · Full Sprint · 5 March 2026</div>
+    <h1>Map Interface UI — Rich Journey View</h1>
+    <div class="meta">
+      <span>Format: Full (4 phases)</span>
+      <span>Primary user: Daniel (desktop)</span>
+      <span>Scope: Trip viewer only</span>
+      <span>Status: <span class="badge badge-green">Complete</span></span>
+    </div>
+  </div>
+
+  <!-- TL;DR -->
+  <div class="block-question">
+    <div class="label">The Challenge</div>
+    <p>The trip viewer map shows the route, but fails to communicate the journey — drive time and distance per leg are hidden behind popup clicks, there's no visual cue for the 5-hour constraint, and no discovery layer for the magical things the family will pass along the way.</p>
+  </div>
+
+  <!-- Decision -->
+  <div class="decision-pull">
+    <div class="label">Decision</div>
+    <p>Rebuild the trip viewer as a desktop two-panel layout — a 300px itinerary sidebar with segment times on the left, a full-height Mapbox outdoors map with colour-coded route segments and segment labels on the right. Add a gated POI discovery toggle and break stop markers.</p>
+  </div>
+
+  <!-- What we're building -->
+  <h2>What We're Building</h2>
+  <div class="feature-grid">
+    <div class="feature-card">
+      <div class="feature-num">01</div>
+      <h4>Two-panel layout</h4>
+      <p>300px fixed sidebar showing itinerary + segment times. Full-height map on the right. Replaces the tab system on desktop (≥md).</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-num">02</div>
+      <h4>Segment time labels</h4>
+      <p>Pill labels at each route segment midpoint: <code>4h 50m · 485km</code>. Rendered as a Mapbox symbol layer. text-optional prevents overlap.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-num">03</div>
+      <h4>Colour-coded segments</h4>
+      <p>Green &lt;4h · Amber 4–5h · Red &gt;5h. Data-driven from the existing segment duration. Current route should show all green/amber.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-num">04</div>
+      <h4>Mapbox outdoors style</h4>
+      <p>Switch to <code>mapbox://styles/mapbox/outdoors-v12</code>. Mountains, lakes, forests, and elevation visible by default. No extra cost.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-num">05</div>
+      <h4>POI discovery toggle <span class="badge badge-amber" style="font-size:10px;padding:1px 6px;">gated</span></h4>
+      <p>Toggle in map controls. queryRenderedFeatures for landmarks, castles, viewpoints. Must be validated against the actual Cork route before shipping enabled.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-num">06</div>
+      <h4>Break stop markers</h4>
+      <p>Small markers at leg midpoints, visible at zoom ≥ 7. Click shows "Suggested break — approx. Xh from [origin]." Subordinate to stop markers.</p>
+    </div>
+  </div>
+
+  <!-- Rationale -->
+  <h2>Rationale</h2>
+  <p style="font-size:14px;margin-bottom:16px;">
+    Three findings drove this decision. First, the segment data already exists — duration and distance are returned by the Directions API in <code>trip-map.tsx</code> — making this a pure UI problem. Second, Nara's competitive research confirmed that co-visible sidebar + map is the industry-standard pattern for route planning on desktop; no serious route planning tool uses a tab system. Third, the Mapbox outdoors style and symbol layers support all required features without any new npm dependencies.
+  </p>
+  <p style="font-size:14px;margin-bottom:24px;">
+    Dr. Aris Thorne's reframe was decisive: the core problem is not "the map lacks features" — it is "Daniel cannot confirm whether the trip is safe to drive without clicking every stop." Segment time visibility (features 01–03) directly solves this. The rest (POI toggle, break markers) are enhancements that can be gated on quality checks.
+  </p>
+
+  <!-- Squad perspectives summary -->
+  <h2>Squad Perspectives</h2>
+  <div class="persona-sketches">
+    <div class="persona-row">
+      <div class="persona-name">Leo Finch</div>
+      <div class="persona-question">"The map is functional but cold. Switch to outdoors tiles and replace flat circles with type-based icons — the map should feel like an adventure book, not a logistics diagram."</div>
+    </div>
+    <div class="persona-row">
+      <div class="persona-name">Dr. Lena Petrova</div>
+      <div class="persona-question">"Segment labels use addLayer with type 'symbol'. POI layer uses queryRenderedFeatures. Segment colour coding uses a Mapbox match expression. No new packages needed — all of this is in Mapbox GL JS."</div>
+    </div>
+    <div class="persona-row">
+      <div class="persona-name">Marcus Thorne</div>
+      <div class="persona-question">"Not building: real-time traffic, custom POI database, navigation handoff, editor map changes, mobile layout, offline mode. Scope is viewer-only. POI layer must be toggleable."</div>
+    </div>
+    <div class="persona-row">
+      <div class="persona-name">Kira Sharma</div>
+      <div class="persona-question">"~6–8 hours to implement. Segment labels at midpoints, data-driven colour coding, 300px aside with overflow-y: auto, queryRenderedFeatures for POIs. Break stop markers as a separate symbol layer at zoom ≥ 7."</div>
+    </div>
+    <div class="persona-row">
+      <div class="persona-name">Dr. Aris Thorne</div>
+      <div class="persona-question">"The real problem: Daniel can't confirm the trip is safe to drive. Items 1 and 2 (segment times + colour coding) solve this. POI and break stops are enhancements. Don't let them delay the core."</div>
+    </div>
+    <div class="persona-row">
+      <div class="persona-name">Rowan Vale</div>
+      <div class="persona-question">"The night before departure, Daniel shows the kids the map. They trace the route, see the mountains and lakes, feel the journey before it begins. That's the feeling this map needs to create."</div>
+    </div>
+    <div class="persona-row">
+      <div class="persona-name">Nara Shin</div>
+      <div class="persona-question">"All three major route planning tools — Google Maps, Waze, Apple Maps — use a sidebar + map co-visible layout on desktop. The tab system is an outlier. Terrain style for scenic routes is universal. Evidence is strong."</div>
+    </div>
+    <div class="persona-row">
+      <div class="persona-name">Ines Alvarez</div>
+      <div class="persona-question">"Default to the two-panel layout — no extra decision step for the user. POI toggle in the map controls area (top-right). Break markers subordinate (zoom ≥ 7). Sidebar gets hidden md:block as mobile safety net."</div>
+    </div>
+  </div>
+
+  <!-- Dissent -->
+  <h2>Elias Vance — Mandatory Dissent</h2>
+  <div class="dissent-block">
+    <div class="dissent-name">Elias Vance — two concerns, both accepted with conditions</div>
+    <blockquote>
+      "On POI data quality: queryRenderedFeatures is inconsistent for rural European routes. If the castle suggestion is wrong or the mountain viewpoint is a car park, it undermines trust. The POI layer must be validated against the actual Cork route before shipping — not just assumed to work. On Hannah: we are explicitly deferring her phone experience to Sprint 004. Every desktop-first decision we make without building the mobile counterpart leaves her out of the product. I accept the prioritisation but want it on record: Sprint 004 must run before this product is complete."
+    </blockquote>
+    <p style="margin-top:8px;font-size:12px;color:#6b7280;"><strong>Outcome:</strong> Accepted with conditions. POI layer gated on data quality validation. Sprint 004 acknowledged as a dependency for a complete product. Recorded in dissent register.</p>
+  </div>
+
+  <!-- What we're NOT doing -->
+  <h2>What We Are NOT Doing</h2>
+  <ul class="not-doing-list">
+    <li>Real-time traffic, live ETAs, or Waze-style navigation</li>
+    <li>Custom POI database — using Mapbox rendered features only (gated on quality)</li>
+    <li>Changes to <code>editor-map.tsx</code> — viewer and editor are separate concerns</li>
+    <li>Mobile-first or responsive sidebar design — Sprint 004</li>
+    <li>Navigation handoff (Google Maps / Apple Maps deep links) — Sprint 006</li>
+    <li>Offline mode — Sprint 006</li>
+    <li>Animated route drawing or journey playback</li>
+    <li>Multiple alternative routes</li>
+  </ul>
+
+  <!-- Success criteria -->
+  <h2>Success Criteria</h2>
+  <ol class="criteria-list">
+    <li>Daniel can state the drive time and distance for any leg without clicking a marker or opening a popup</li>
+    <li>All legs on the current Cork route display as green or amber (zero red segments)</li>
+    <li>At least two named POIs per leg visible when POI toggle is on — if not, toggle ships hidden</li>
+    <li>The sidebar itinerary shows all 11 stops with segment times in a single vertical scroll at 1280px</li>
+  </ol>
+
+  <!-- Next action -->
+  <div class="next-action">
+    <div class="label">Next Action</div>
+    <p>Run the implementation sprint. Build the two-panel layout, segment labels, colour coding, and Mapbox outdoors style switch in <code>trip-map.tsx</code> and <code>app/trip/[id]/page.tsx</code>. Gate the POI layer on data quality validation against the actual Cork route.</p>
+  </div>
+
+  <!-- Artefacts -->
+  <h2>Artefacts</h2>
+  <ul class="artifacts">
+    <li>📄 <a href="../../../research/sprints/sprint-001-map-ui/brief.md">research/sprints/sprint-001-map-ui/brief.md</a></li>
+    <li>💬 <a href="../../../research/sprints/sprint-001-map-ui/sketches.md">research/sprints/sprint-001-map-ui/sketches.md</a> — 9 persona perspectives</li>
+    <li>✅ <a href="../../../research/sprints/sprint-001-map-ui/decision.md">research/sprints/sprint-001-map-ui/decision.md</a></li>
+    <li>🎨 <a href="../../../research/sprints/sprint-001-map-ui/creative-brief.md">research/sprints/sprint-001-map-ui/creative-brief.md</a> — implementation-ready spec</li>
+    <li>💡 <a href="../../../research/sprints/sprint-001-map-ui/ideas.md">research/sprints/sprint-001-map-ui/ideas.md</a> — 7 ideas for future sprints</li>
+    <li>📋 <a href="../../../research/sprints/sprint-001-map-ui/synthesis.md">research/sprints/sprint-001-map-ui/synthesis.md</a></li>
+    <li>📦 <a href="../../../research/sprints/sprint-001-map-ui/summary.json">research/sprints/sprint-001-map-ui/summary.json</a></li>
+  </ul>
+
+</main>
+
+<script src="../../layout.js"></script>
+</body>
+</html>

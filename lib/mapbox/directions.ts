@@ -29,7 +29,7 @@ export async function getRoute(
     .map((stop) => `${stop.location.lng},${stop.location.lat}`)
     .join(";");
 
-  const url = `https://api.mapbox.com/directions/v5/${DIRECTIONS_PROFILE}/${coordinates}?geometries=geojson&overview=full&steps=false&access_token=${MAPBOX_TOKEN}`;
+  const url = `https://api.mapbox.com/directions/v5/${DIRECTIONS_PROFILE}/${coordinates}?geometries=geojson&overview=full&steps=true&access_token=${MAPBOX_TOKEN}`;
 
   try {
     const response = await fetch(url);
@@ -48,18 +48,26 @@ export async function getRoute(
     const route = data.routes[0];
     const legs = route.legs;
 
-    const segments: RouteSegment[] = legs.map(
-      (leg: { distance: number; duration: number }, index: number) => ({
+    type ApiStep = { geometry: { type: "LineString"; coordinates: [number, number][] } };
+    type ApiLeg = { distance: number; duration: number; steps: ApiStep[] };
+
+    const segments: RouteSegment[] = legs.map((leg: ApiLeg, index: number) => {
+      // Combine step coordinates into a single LineString, avoiding duplicate junction points
+      const coordinates: [number, number][] = leg.steps.reduce(
+        (acc: [number, number][], step: ApiStep, stepIdx: number) =>
+          stepIdx === 0
+            ? step.geometry.coordinates
+            : [...acc, ...step.geometry.coordinates.slice(1)],
+        [],
+      );
+      return {
         from: stops[index].name,
         to: stops[index + 1].name,
         distance: leg.distance,
         duration: leg.duration,
-        geometry: {
-          type: "LineString",
-          coordinates: [], // Individual segment geometry not available with overview=full
-        },
-      }),
-    );
+        geometry: { type: "LineString", coordinates },
+      };
+    });
 
     return {
       totalDistance: route.distance,
