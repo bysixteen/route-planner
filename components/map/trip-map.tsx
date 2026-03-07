@@ -218,13 +218,15 @@ export const TripMap = forwardRef<TripMapHandle, TripMapProps>(function TripMap(
     if (options && options.length > 0) {
       options.forEach((opt) => {
         const el = document.createElement("div");
+        const isBooked = !!opt.booked;
         const isRec = !!opt.rec;
+        const markerColor = isBooked ? "#16a34a" : isRec ? "#eab308" : "#8b5cf6";
         el.style.cssText = `
           width: 22px;
           height: 22px;
           border-radius: 50%;
           border: 2.5px solid white;
-          background: ${isRec ? "#eab308" : "#8b5cf6"};
+          background: ${markerColor};
           display: flex;
           align-items: center;
           justify-content: center;
@@ -236,15 +238,21 @@ export const TripMap = forwardRef<TripMapHandle, TripMapProps>(function TripMap(
         `;
         el.textContent = opt.id;
 
-        const recBadge = isRec
+        const bookedBadge = isBooked
+          ? `<span style="background:#16a34a;color:white;padding:1px 6px;border-radius:8px;font-size:10px;margin-left:4px;font-weight:700">✓ BOOKED</span>`
+          : "";
+        const recBadge = !isBooked && isRec
           ? `<span style="background:#eab308;color:white;padding:1px 6px;border-radius:8px;font-size:10px;margin-left:4px;font-weight:700">★ FAV</span>`
+          : "";
+        const bookingRefLine = isBooked && opt.bookingRef
+          ? `<br><span style="color:#16a34a;font-size:11px;font-weight:600">Ref: ${opt.bookingRef}</span>`
           : "";
 
         const popup = new mapboxgl.Popup({ offset: 15, closeButton: true }).setHTML(`
           <div style="padding: 8px; max-width: 220px;">
-            <strong>${opt.name}</strong>${recBadge}
+            <strong>${opt.name}</strong>${bookedBadge}${recBadge}
             <br><span style="color: #666; font-size: 12px;">For: ${opt.stop}</span>
-            <br><span style="color: #8b5cf6; font-size: 12px;">${opt.rating} · ${opt.price}</span>
+            <br><span style="color: #8b5cf6; font-size: 12px;">${opt.rating} · ${opt.price}</span>${bookingRefLine}
             <br><a href="${opt.url}" target="_blank" style="color: #3b82f6; font-size: 11px;">Website →</a>
           </div>
         `);
