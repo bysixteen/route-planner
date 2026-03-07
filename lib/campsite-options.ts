@@ -13,6 +13,8 @@ export interface CampsiteOption {
   price: string;
   url: string;
   rec?: boolean;
+  booked?: boolean;
+  bookingRef?: string;
 }
 
 export const CAMPSITE_OPTIONS: CampsiteOption[] = [
@@ -112,6 +114,8 @@ export const CAMPSITE_OPTIONS: CampsiteOption[] = [
     rating: "4.0/5",
     price: "€46/nt",
     url: "https://www.campingcarpediem.de/english/",
+    booked: true,
+    bookingRef: "R-00005972",
   },
 
   // ── Stop: Tirol (Innsbruck area, 22 Jul) — 7 options ──
@@ -121,9 +125,11 @@ export const CAMPSITE_OPTIONS: CampsiteOption[] = [
     name: "Gerhardhof, Wildermieming",
     coords: [11.0360, 47.3142],
     rating: "4.6/5",
-    price: "€37–42/nt",
+    price: "€45/nt",
     url: "https://www.gerhardhof.com",
     rec: true,
+    booked: true,
+    bookingRef: "2026-034828",
   },
   {
     stop: "Tirol",
@@ -244,5 +250,54 @@ export const CAMPSITE_OPTIONS: CampsiteOption[] = [
     rating: "3.8/5",
     price: "€51/nt",
     url: "https://www.campingkrems.at/en/",
+  },
+
+  // ── Stop: Belgium (first overnight, ~19–20 Jul) — 5 options ──
+  {
+    stop: "Belgium",
+    id: "B1",
+    name: "Camping Hof van Eeden, Heultje",
+    coords: [4.82211, 51.08814],
+    rating: "7.8/10",
+    price: "€32/nt",
+    url: "https://www.eurocampings.co.uk/belgium/antwerp/heultje/camping-hof-van-eeden-107861/",
+  },
+  {
+    stop: "Belgium",
+    id: "B2",
+    name: "Camping Siesta, Wechelderzande",
+    coords: [4.660, 51.252],
+    rating: "8.5/10",
+    price: "€31–37/nt",
+    url: "https://www.eurocampings.co.uk/belgium/antwerp/wechelderzande/camping-siesta-125394/",
+    rec: true,
+  },
+  {
+    stop: "Belgium",
+    id: "B3",
+    name: "Camping Houtum, Kasterlee",
+    coords: [4.97781, 51.23311],
+    rating: "8.9/10",
+    price: "€35–37/nt",
+    url: "https://www.eurocampings.co.uk/belgium/antwerp/kasterlee/camping-houtum-100007/",
+    rec: true,
+  },
+  {
+    stop: "Belgium",
+    id: "B4",
+    name: "City Camping Antwerp",
+    coords: [4.39261, 51.23347],
+    rating: "7.0/10",
+    price: "€41–50/nt",
+    url: "https://www.eurocampings.co.uk/belgium/antwerp/antwerp/city-camping-antwerp-109400/",
+  },
+  {
+    stop: "Belgium",
+    id: "B5",
+    name: "Urban Gardens, Ghent",
+    coords: [3.68097, 51.04622],
+    rating: "6.7/10",
+    price: "€46–56/nt",
+    url: "https://www.eurocampings.co.uk/belgium/east-flanders/ghent/urban-gardens-101639/",
   },
 ];
