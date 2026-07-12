@@ -15,6 +15,9 @@ import {
   type RouteResult,
 } from "@/lib/mapbox/directions";
 import { CAMPSITE_OPTIONS } from "@/lib/campsite-options";
+import { cn } from "@/lib/utils";
+
+type MobileView = "map" | "list";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -223,6 +226,7 @@ export default function TripPageClient() {
   const [route, setRoute] = useState<RouteResult | null>(null);
   const [loading, setLoading] = useState(true);
   const [deleting, setDeleting] = useState(false);
+  const [mobileView, setMobileView] = useState<MobileView>("map");
 
   useEffect(() => {
     async function fetchTrip() {
@@ -241,6 +245,11 @@ export default function TripPageClient() {
 
   const handleRouteCalculated = useCallback((calculatedRoute: RouteResult) => {
     setRoute(calculatedRoute);
+  }, []);
+
+  const handleStopClick = useCallback((globalIndex: number) => {
+    setMobileView("map");
+    mapRef.current?.flyToStop(globalIndex);
   }, []);
 
   const handleDelete = useCallback(async () => {
@@ -263,6 +272,11 @@ export default function TripPageClient() {
   const stops = useMemo(
     () => (trip ? convertStopsForMap(trip.stops) : []),
     [trip],
+  );
+
+  const activeOptions = useMemo(
+    () => CAMPSITE_OPTIONS.filter((o) => o.booked || o.rec),
+    [],
   );
 
   const sortedStops = useMemo(
@@ -425,8 +439,8 @@ export default function TripPageClient() {
       return (
         <div
           key={stop.id}
-          className="flex cursor-pointer items-center gap-2 rounded-md border border-dashed border-amber-300 bg-amber-50 px-3 py-2 transition-colors hover:bg-amber-100 dark:border-amber-700 dark:bg-amber-950/30 dark:hover:bg-amber-950/50"
-          onClick={() => mapRef.current?.flyToStop(globalIndex)}
+          className="flex min-h-11 cursor-pointer items-center gap-2 rounded-md border border-dashed border-amber-300 bg-amber-50 px-3 py-2 transition-colors hover:bg-amber-100 dark:border-amber-700 dark:bg-amber-950/30 dark:hover:bg-amber-950/50"
+          onClick={() => handleStopClick(globalIndex)}
         >
           <div className="flex h-4 w-4 shrink-0 items-center justify-center rounded-sm bg-amber-500 rotate-45">
             <span className="sr-only">waypoint</span>
@@ -452,7 +466,7 @@ export default function TripPageClient() {
       <Card
         key={stop.id}
         className="cursor-pointer shadow-none transition-colors hover:bg-muted/50"
-        onClick={() => mapRef.current?.flyToStop(globalIndex)}
+        onClick={() => handleStopClick(globalIndex)}
       >
         <CardContent className="flex items-start gap-3 p-3">
           <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary text-xs font-bold text-primary-foreground">
@@ -591,16 +605,18 @@ export default function TripPageClient() {
     <div className="flex h-screen flex-col overflow-hidden bg-background">
       {/* Header */}
       <header className="flex-shrink-0 border-b">
-        <div className="flex items-center justify-between px-4 py-3">
-          <Link href="/" className="text-lg font-bold hover:text-primary">
-            Route Planner
+        <div className="flex items-center justify-between gap-2 px-4 py-2 sm:py-3">
+          <Link
+            href="/"
+            className="inline-flex min-h-11 items-center text-lg font-bold hover:text-primary"
+          >
+            <span aria-hidden className="mr-1">←</span> Route Planner
           </Link>
           <Button
             variant="outline"
-            size="sm"
             onClick={handleDelete}
             disabled={deleting}
-            className="text-destructive hover:bg-destructive hover:text-destructive-foreground"
+            className="min-h-11 text-destructive hover:bg-destructive hover:text-destructive-foreground"
           >
             {deleting ? "Deleting..." : "Delete"}
           </Button>
@@ -677,10 +693,51 @@ export default function TripPageClient() {
         </div>
       </div>
 
+      {/* Mobile view toggle */}
+      <div
+        role="tablist"
+        aria-label="View"
+        className="flex-shrink-0 border-b px-4 py-2 md:hidden"
+      >
+        <div className="inline-flex rounded-md border bg-muted p-0.5">
+          <button
+            role="tab"
+            aria-selected={mobileView === "map"}
+            onClick={() => setMobileView("map")}
+            className={cn(
+              "min-h-9 rounded px-4 text-sm font-medium transition-colors",
+              mobileView === "map"
+                ? "bg-background shadow-sm"
+                : "text-muted-foreground",
+            )}
+          >
+            Map
+          </button>
+          <button
+            role="tab"
+            aria-selected={mobileView === "list"}
+            onClick={() => setMobileView("list")}
+            className={cn(
+              "min-h-9 rounded px-4 text-sm font-medium transition-colors",
+              mobileView === "list"
+                ? "bg-background shadow-sm"
+                : "text-muted-foreground",
+            )}
+          >
+            List
+          </button>
+        </div>
+      </div>
+
       {/* Two-panel layout: sidebar + map */}
       <div className="flex flex-1 overflow-hidden">
-        {/* Itinerary sidebar — desktop only */}
-        <aside className="hidden w-[320px] flex-shrink-0 flex-col overflow-y-auto border-r md:flex">
+        {/* Itinerary sidebar — full width on mobile when list view, fixed on desktop */}
+        <aside
+          className={cn(
+            "flex-shrink-0 flex-col overflow-y-auto border-r md:flex md:w-[320px]",
+            mobileView === "list" ? "flex w-full" : "hidden",
+          )}
+        >
           <div className="flex-1 pb-4">
             {hasDayGrouping ? (
               /* Day-grouped itinerary */
@@ -747,12 +804,17 @@ export default function TripPageClient() {
           </div>
         </aside>
 
-        {/* Map — fills remaining space */}
-        <div className="flex-1">
+        {/* Map — fills remaining space; hidden on mobile when list view is active */}
+        <div
+          className={cn(
+            "flex-1 md:block",
+            mobileView === "map" ? "block" : "hidden",
+          )}
+        >
           <TripMap
             ref={mapRef}
             stops={stops}
-            options={CAMPSITE_OPTIONS}
+            options={activeOptions}
             maxDrivingMinutes={maxDrivingMinutes}
             returnFromSegment={
               eventStopIndex >= 0 ? eventStopIndex : undefined

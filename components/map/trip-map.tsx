@@ -396,61 +396,6 @@ export const TripMap = forwardRef<TripMapHandle, TripMapProps>(function TripMap(
         newSourceIds.push("segment-labels-src");
         newLayerIds.push("segment-labels");
 
-        // Break stop markers at geographic midpoints — visible at zoom >= 7
-        const breakFeatures: GeoJSON.Feature<GeoJSON.Point>[] = stops
-          .slice(0, -1)
-          .map((stop, i) => ({
-            type: "Feature",
-            properties: {
-              label: `Approx. halfway between ${stop.name} and ${stops[i + 1].name}`,
-            },
-            geometry: {
-              type: "Point",
-              coordinates: geographicMidpoint(stop.location, stops[i + 1].location),
-            },
-          }));
-
-        map.current!.addSource("break-stops-src", {
-          type: "geojson",
-          data: { type: "FeatureCollection", features: breakFeatures },
-        });
-
-        map.current!.addLayer({
-          id: "break-stops",
-          type: "circle",
-          source: "break-stops-src",
-          minzoom: 7,
-          paint: {
-            "circle-radius": 7,
-            "circle-color": "#f59e0b",
-            "circle-stroke-width": 2,
-            "circle-stroke-color": "#ffffff",
-            "circle-opacity": 0.85,
-          },
-        });
-
-        map.current!.on("click", "break-stops", (e) => {
-          if (!e.features?.[0] || !map.current) return;
-          const label = e.features[0].properties?.label as string;
-          new mapboxgl.Popup()
-            .setLngLat(e.lngLat)
-            .setHTML(
-              `<div style="padding: 8px;"><strong>Suggested break</strong><br><span style="color: #666; font-size: 12px;">${label}</span></div>`,
-            )
-            .addTo(map.current);
-        });
-
-        map.current!.on("mouseenter", "break-stops", () => {
-          if (map.current) map.current.getCanvas().style.cursor = "pointer";
-        });
-
-        map.current!.on("mouseleave", "break-stops", () => {
-          if (map.current) map.current.getCanvas().style.cursor = "";
-        });
-
-        newSourceIds.push("break-stops-src");
-        newLayerIds.push("break-stops");
-
         routeLayerIdsRef.current = newLayerIds;
         routeSourceIdsRef.current = newSourceIds;
       });

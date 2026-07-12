@@ -118,21 +118,21 @@ export default function HomePage() {
 
   return (
     <div className="min-h-screen bg-background">
-      <header className="border-b">
-        <div className="container mx-auto flex items-center justify-between px-4 py-4">
-          <h1 className="text-xl font-bold">Route Planner</h1>
+      <header className="sticky top-0 z-40 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+        <div className="container mx-auto flex items-center justify-between gap-3 px-4 py-3 sm:py-4">
+          <h1 className="text-lg font-bold sm:text-xl">Route Planner</h1>
           <nav className="flex gap-2">
             <Link href="/plan">
-              <Button size="sm">Plan a Trip</Button>
+              <Button className="min-h-11">Plan a Trip</Button>
             </Link>
           </nav>
         </div>
       </header>
 
-      <main className="container mx-auto px-4 py-8">
-        <div className="mb-8">
-          <h2 className="text-3xl font-bold tracking-tight">Your Trips</h2>
-          <p className="mt-2 text-muted-foreground">
+      <main className="container mx-auto px-4 py-6 sm:py-8">
+        <div className="mb-6 sm:mb-8">
+          <h2 className="text-2xl font-bold tracking-tight sm:text-3xl">Your Trips</h2>
+          <p className="mt-2 text-sm text-muted-foreground sm:text-base">
             Plan your road trips, track your journey, and share your adventures.
           </p>
         </div>
@@ -146,17 +146,17 @@ export default function HomePage() {
             Loading trips...
           </div>
         ) : trips.length === 0 ? (
-          <div className="rounded-lg border border-dashed p-12 text-center">
+          <div className="rounded-lg border border-dashed p-8 text-center sm:p-12">
             <h3 className="text-lg font-semibold">No trips yet</h3>
             <p className="mt-2 text-muted-foreground">
               Start planning your first adventure
             </p>
             <Link href="/plan" className="mt-4 inline-block">
-              <Button>Plan a Trip</Button>
+              <Button className="min-h-11">Plan a Trip</Button>
             </Link>
           </div>
         ) : (
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="grid gap-3 sm:grid-cols-2 sm:gap-4 lg:grid-cols-3">
             {trips.map((trip) => (
               <TripCard key={trip.id} trip={trip} />
             ))}

@@ -40,6 +40,9 @@ import {
   createEditorStop,
 } from "@/lib/types";
 import { createTrip } from "@/lib/supabase/queries";
+import { cn } from "@/lib/utils";
+
+type MobileView = "map" | "list";
 
 // Helper to format date for display
 function formatDateShort(date: Date): string {
@@ -87,6 +90,7 @@ export default function PlanPage() {
   const [activeInsertIndex, setActiveInsertIndex] = useState<number | null>(
     null,
   );
+  const [mobileView, setMobileView] = useState<MobileView>("list");
 
   // Home address state
   interface HomeAddress {
@@ -388,20 +392,27 @@ export default function PlanPage() {
     <div className="flex h-screen flex-col bg-background">
       {/* Header */}
       <header className="shrink-0 border-b">
-        <div className="flex items-center justify-between px-4 py-3">
-          <div className="flex items-center gap-4">
-            <Link href="/" className="text-xl font-bold hover:text-primary">
-              Route Planner
+        <div className="flex flex-col gap-2 px-4 py-2 sm:py-3 md:flex-row md:items-center md:justify-between">
+          {/* Title row */}
+          <div className="flex items-center gap-2 md:gap-4">
+            <Link
+              href="/"
+              className="inline-flex min-h-11 items-center text-lg font-bold hover:text-primary md:text-xl"
+              aria-label="Back to trips"
+            >
+              <span aria-hidden className="mr-1">←</span> Route Planner
             </Link>
-            <Separator orientation="vertical" className="h-6" />
+            <Separator orientation="vertical" className="hidden h-6 md:block" />
             <Input
               value={tripTitle}
               onChange={(e) => setTripTitle(e.target.value)}
-              className="w-64 border-none bg-transparent text-lg font-semibold focus-visible:ring-1"
+              aria-label="Trip title"
+              className="min-h-11 flex-1 border-none bg-transparent text-base font-semibold focus-visible:ring-1 md:w-64 md:flex-none md:text-lg"
             />
           </div>
-          <div className="flex items-center gap-4">
-            {/* Start date picker */}
+
+          {/* Actions row */}
+          <div className="flex flex-wrap items-center gap-2 md:gap-4">
             <div className="flex items-center gap-2">
               <Label
                 htmlFor="start-date"
@@ -414,19 +425,19 @@ export default function PlanPage() {
                 type="date"
                 value={startDate}
                 onChange={(e) => setStartDate(e.target.value)}
-                className="w-36 h-8 text-sm"
+                className="min-h-11 w-36 text-sm md:h-8 md:min-h-0"
               />
             </div>
-            <div className="flex gap-2">
+            <div className="ml-auto flex gap-2 md:ml-0">
               <Button
                 variant="outline"
-                size="sm"
                 onClick={handleSave}
                 disabled={isSaving || stops.length === 0}
+                className="min-h-11"
               >
                 {isSaving ? "Saving..." : "Save Trip"}
               </Button>
-              <Button size="sm" disabled={stops.length < 2}>
+              <Button disabled={stops.length < 2} className="min-h-11">
                 Export
               </Button>
             </div>
@@ -470,10 +481,51 @@ export default function PlanPage() {
         </div>
       )}
 
+      {/* Mobile view toggle */}
+      <div
+        role="tablist"
+        aria-label="View"
+        className="shrink-0 border-b px-4 py-2 md:hidden"
+      >
+        <div className="inline-flex rounded-md border bg-muted p-0.5">
+          <button
+            role="tab"
+            aria-selected={mobileView === "list"}
+            onClick={() => setMobileView("list")}
+            className={cn(
+              "min-h-9 rounded px-4 text-sm font-medium transition-colors",
+              mobileView === "list"
+                ? "bg-background shadow-sm"
+                : "text-muted-foreground",
+            )}
+          >
+            Itinerary
+          </button>
+          <button
+            role="tab"
+            aria-selected={mobileView === "map"}
+            onClick={() => setMobileView("map")}
+            className={cn(
+              "min-h-9 rounded px-4 text-sm font-medium transition-colors",
+              mobileView === "map"
+                ? "bg-background shadow-sm"
+                : "text-muted-foreground",
+            )}
+          >
+            Map
+          </button>
+        </div>
+      </div>
+
       {/* Main content */}
       <div className="flex flex-1 overflow-hidden">
         {/* Sidebar */}
-        <aside className="flex w-96 shrink-0 flex-col border-r bg-muted/30">
+        <aside
+          className={cn(
+            "shrink-0 flex-col border-r bg-muted/30 md:flex md:w-96",
+            mobileView === "list" ? "flex w-full" : "hidden",
+          )}
+        >
           {/* Header */}
           <div className="shrink-0 border-b p-4">
             <div className="flex items-center justify-between">
@@ -790,7 +842,12 @@ export default function PlanPage() {
         </aside>
 
         {/* Map */}
-        <main className="flex-1">
+        <main
+          className={cn(
+            "flex-1 md:block",
+            mobileView === "map" ? "block" : "hidden",
+          )}
+        >
           <EditorMap
             stops={stops}
             selectedStopId={selectedStopId}
