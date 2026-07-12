@@ -20,6 +20,60 @@ import { cn } from "@/lib/utils";
 type MobileView = "map" | "list";
 
 // ---------------------------------------------------------------------------
+// Dashboard-style metric tile — Tesla-inspired info hierarchy
+// (per research/sprints/sprint-002-data-concepts/creative-brief.md)
+// ---------------------------------------------------------------------------
+
+type MetricTone = "default" | "success" | "warning" | "danger" | "muted";
+
+const TILE_TONE: Record<MetricTone, string> = {
+  default: "bg-background border-border text-foreground",
+  success: "bg-green-50 border-green-200 text-green-900",
+  warning: "bg-amber-50 border-amber-200 text-amber-900",
+  danger: "bg-red-50 border-red-200 text-red-900",
+  muted: "bg-muted border-border text-muted-foreground",
+};
+
+function MetricTile({
+  label,
+  value,
+  sub,
+  tone = "default",
+  emphasis = false,
+}: {
+  label: string;
+  value: string;
+  sub?: string;
+  tone?: MetricTone;
+  emphasis?: boolean;
+}) {
+  return (
+    <div
+      className={cn(
+        "flex min-w-[64px] shrink-0 flex-col items-start justify-center rounded-md border px-2.5 py-1.5 sm:min-w-[72px]",
+        TILE_TONE[tone],
+        emphasis && "shadow-sm",
+      )}
+    >
+      <span
+        className={cn(
+          "font-semibold leading-none tabular-nums tracking-tight",
+          emphasis ? "text-lg sm:text-xl" : "text-base sm:text-lg",
+        )}
+      >
+        {value}
+        {sub && (
+          <span className="ml-1 text-xs font-medium opacity-70">{sub}</span>
+        )}
+      </span>
+      <span className="mt-1 text-[9px] font-semibold uppercase leading-none tracking-widest opacity-70 sm:text-[10px]">
+        {label}
+      </span>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
 // Types
 // ---------------------------------------------------------------------------
 
@@ -623,10 +677,10 @@ export default function TripPageClient() {
         </div>
       </header>
 
-      {/* Summary bar */}
-      <div className="flex-shrink-0 border-b px-4 py-2">
-        {/* Row 1: title + status + vehicle */}
-        <div className="flex flex-wrap items-center gap-2">
+      {/* Summary bar — dashboard-style metric tiles */}
+      <div className="flex-shrink-0 border-b bg-muted/30">
+        {/* Row 1: title, status, vehicle, countdown */}
+        <div className="flex flex-wrap items-center gap-2 px-4 pt-2.5 pb-1.5">
           <h1 className="text-lg font-bold leading-tight">{trip.title}</h1>
           <Badge className={STATUS_COLOURS[trip.status]} variant="secondary">
             {trip.status}
@@ -634,6 +688,12 @@ export default function TripPageClient() {
           {trip.vehicles && (
             <span className="text-sm text-muted-foreground">
               · {trip.vehicles.name}
+            </span>
+          )}
+          {(trip.start_date || trip.end_date) && (
+            <span className="ml-auto text-xs text-muted-foreground">
+              {formatDate(trip.start_date)}
+              {trip.end_date && ` — ${formatDate(trip.end_date)}`}
             </span>
           )}
           {countdownLabel() && (
@@ -650,45 +710,57 @@ export default function TripPageClient() {
           )}
         </div>
 
-        {/* Row 2: metrics */}
-        <div className="mt-1 flex flex-wrap items-center gap-x-4 gap-y-0.5 text-xs text-muted-foreground">
-          {(trip.start_date || trip.end_date) && (
-            <span>
-              {formatDate(trip.start_date)}
-              {trip.end_date && ` — ${formatDate(trip.end_date)}`}
-            </span>
+        {/* Row 2: dashboard metric tiles */}
+        <div className="scrollbar-hide flex gap-1.5 overflow-x-auto px-4 pb-2.5 pt-1 sm:gap-2">
+          <MetricTile
+            label="Booked"
+            value={
+              bookingHealth.total > 0
+                ? `${bookingHealth.confirmed}/${bookingHealth.total}`
+                : "—"
+            }
+            tone={
+              bookingHealth.total === 0
+                ? "muted"
+                : bookingHealth.confirmed === bookingHealth.total
+                  ? "success"
+                  : bookingHealth.confirmed > 0
+                    ? "warning"
+                    : "danger"
+            }
+            emphasis
+          />
+          {route && (
+            <MetricTile
+              label="Distance"
+              value={formatDistance(route.totalDistance).replace(" ", "")}
+            />
           )}
           {route && (
-            <>
-              <span>{formatDistance(route.totalDistance)}</span>
-              <span>{formatDuration(route.totalDuration)} driving</span>
-            </>
+            <MetricTile
+              label="Driving"
+              value={formatDuration(route.totalDuration).replace(" ", "")}
+            />
           )}
-          <span>{sortedStops.length} stops</span>
+          <MetricTile label="Stops" value={String(sortedStops.length)} />
           {totalNights > 0 && (
-            <span>{totalNights} nights</span>
+            <MetricTile label="Nights" value={String(totalNights)} />
           )}
           {countriesCount > 0 && (
-            <span>{countriesCount} countries</span>
+            <MetricTile label="Countries" value={String(countriesCount)} />
           )}
-          <span
-            className={
-              bookingHealth.confirmed === bookingHealth.total && bookingHealth.total > 0
-                ? "font-medium text-green-700"
-                : bookingHealth.confirmed > 0
-                  ? "font-medium text-amber-700"
-                  : ""
-            }
-          >
-            {bookingHealth.confirmed}/{bookingHealth.total} confirmed
-          </span>
           {totalEstimated != null && (
-            <span>~€{totalEstimated.toLocaleString("en-GB")} est.</span>
+            <MetricTile
+              label="Est. cost"
+              value={`€${totalEstimated.toLocaleString("en-GB")}`}
+            />
           )}
           {fuelEstimate && (
-            <span>
-              ~{fuelEstimate.litres}L fuel (~€{fuelEstimate.cost})
-            </span>
+            <MetricTile
+              label="Fuel"
+              value={`${fuelEstimate.litres}L`}
+              sub={`€${fuelEstimate.cost}`}
+            />
           )}
         </div>
       </div>

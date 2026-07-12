@@ -138,3 +138,12 @@
 .mapboxgl-popup-close-button {
   display: none;
 }
+
+/* Hide scrollbar on horizontally scrolling metric tile row */
+.scrollbar-hide {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
