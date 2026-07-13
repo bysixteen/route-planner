@@ -7,12 +7,21 @@ import "mapbox-gl/dist/mapbox-gl.css";
 import {
   MAPBOX_TOKEN,
   DEFAULT_MAP_STYLE,
+  MAP_STYLES,
   DEFAULT_CENTER,
   DEFAULT_ZOOM,
 } from "@/lib/mapbox/config";
 import { getRoute, formatDuration, formatDistance, type RouteResult } from "@/lib/mapbox/directions";
+import { cn } from "@/lib/utils";
 import type { Stop } from "@/lib/types";
 import type { CampsiteOption } from "@/lib/campsite-options";
+
+type MapStyleKey = keyof typeof MAP_STYLES;
+const STYLE_OPTIONS: { key: MapStyleKey; label: string }[] = [
+  { key: "dark", label: "Map" },
+  { key: "satellite", label: "Satellite" },
+  { key: "outdoors", label: "Terrain" },
+];
 
 export interface TripMapHandle {
   flyToStop: (index: number) => void;
@@ -24,23 +33,33 @@ interface TripMapProps {
   maxDrivingMinutes?: number;
   /** Segment index at which return leg begins (segments after this are dashed) */
   returnFromSegment?: number;
+  /** Dim everything outside this inclusive stop-index range (null = show all). */
+  focusRange?: [number, number] | null;
+  /** Clicking a marker selects that stop (same as the list) — index into stops. */
+  onSelectStop?: (index: number) => void;
   onRouteCalculated?: (route: RouteResult) => void;
   className?: string;
 }
 
+// Tesla cockpit marker colours (hex — WebGL can't read CSS vars).
+// Aligned to the dark tokens in globals.css / DESIGN.md.
+const VOLT = "#3e6ae1";
+const ORANGE = "#e8b23a"; // amber accent (kept name for existing refs)
+const SAGE_DEEP = "#8a9099"; // ink-dim
+
 const STOP_TYPE_COLOURS: Record<string, string> = {
-  campsite: "#22c55e",
-  city: "#3b82f6",
-  attraction: "#f59e0b",
-  rest: "#8b5cf6",
-  event: "#ef4444",
-  transport: "#06b6d4",
+  campsite: "#2fbf71", // good
+  city: VOLT,
+  attraction: "#f5f6f7", // ink
+  rest: "#e8b23a", // amber
+  event: "#e31937", // alert
+  transport: "#8a9099", // ink-dim
 };
 
 const HEALTH_COLOURS = {
-  green: "#16a34a",
-  amber: "#d97706",
-  red: "#dc2626",
+  green: "#2fbf71",
+  amber: "#e8b23a",
+  red: "#e31937",
 } as const;
 
 function segmentHealth(
@@ -65,21 +84,70 @@ function geographicMidpoint(
   return [(a.lng + b.lng) / 2, (a.lat + b.lat) / 2];
 }
 
+
 export const TripMap = forwardRef<TripMapHandle, TripMapProps>(function TripMap({
   stops,
   options,
   maxDrivingMinutes = 300,
   returnFromSegment,
+  focusRange,
+  onSelectStop,
   onRouteCalculated,
   className,
 }, ref) {
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<mapboxgl.Map | null>(null);
   const markersRef = useRef<mapboxgl.Marker[]>([]);
+  const focusRangeRef = useRef<[number, number] | null | undefined>(focusRange);
+  focusRangeRef.current = focusRange;
+  const onSelectStopRef = useRef(onSelectStop);
+  onSelectStopRef.current = onSelectStop;
   const optionMarkersRef = useRef<mapboxgl.Marker[]>([]);
   const routeLayerIdsRef = useRef<string[]>([]);
   const routeSourceIdsRef = useRef<string[]>([]);
   const [isLoaded, setIsLoaded] = useState(false);
+  const [styleKey, setStyleKey] = useState<MapStyleKey>("dark");
+  const [redrawNonce, setRedrawNonce] = useState(0);
+  const styleInitDone = useRef(false);
+
+  // Swap the base style at runtime. Markers persist; the route layers are
+  // wiped by setStyle, so bump a nonce on style.load to redraw them.
+  useEffect(() => {
+    if (!map.current) return;
+    if (!styleInitDone.current) {
+      styleInitDone.current = true;
+      return; // initial style is already applied on init
+    }
+    map.current.setStyle(MAP_STYLES[styleKey]);
+    map.current.once("style.load", () => setRedrawNonce((n) => n + 1));
+  }, [styleKey]);
+
+  // Dim markers + route segments outside the focused leg.
+  const applyFocus = useCallback(() => {
+    if (!map.current) return;
+    const fr = focusRangeRef.current;
+    const inRange = (i: number) => !fr || (i >= fr[0] && i <= fr[1]);
+    markersRef.current.forEach((m, i) => {
+      const el = m.getElement();
+      el.style.transition = "opacity 0.3s ease";
+      el.style.opacity = inRange(i) ? "1" : "0.25";
+    });
+    routeLayerIdsRef.current.forEach((id) => {
+      const match = id.match(/^route-seg-(\d+)$/);
+      if (!match || !map.current?.getLayer(id)) return;
+      const seg = Number(match[1]);
+      map.current.setPaintProperty(
+        id,
+        "line-opacity",
+        inRange(seg) && inRange(seg + 1) ? 0.95 : 0.1,
+      );
+    });
+  }, []);
+
+  // Re-apply focus when the selected leg changes.
+  useEffect(() => {
+    applyFocus();
+  }, [focusRange, applyFocus]);
 
   const flyToStop = useCallback((index: number) => {
     const stop = stops[index];
@@ -90,7 +158,6 @@ export const TripMap = forwardRef<TripMapHandle, TripMapProps>(function TripMap(
       duration: 1200,
     });
     // Open the marker popup
-    markersRef.current[index]?.togglePopup();
   }, [stops]);
 
   useImperativeHandle(ref, () => ({ flyToStop }), [flyToStop]);
@@ -112,6 +179,25 @@ export const TripMap = forwardRef<TripMapHandle, TripMapProps>(function TripMap(
 
     map.current.on("load", () => {
       setIsLoaded(true);
+
+      // Break-stop interactions — bound once (layer-scoped handlers fire
+      // when the layer appears, so no need to rebind per stops update).
+      map.current!.on("click", "break-stops", (e) => {
+        if (!e.features?.[0] || !map.current) return;
+        const label = e.features[0].properties?.label as string;
+        new mapboxgl.Popup({ maxWidth: "260px" })
+          .setLngLat(e.lngLat)
+          .setHTML(
+            `<div class="pop-card"><div class="pop-title">Suggested break</div><div class="pop-sub">${label}</div></div>`,
+          )
+          .addTo(map.current);
+      });
+      map.current!.on("mouseenter", "break-stops", () => {
+        if (map.current) map.current.getCanvas().style.cursor = "pointer";
+      });
+      map.current!.on("mouseleave", "break-stops", () => {
+        if (map.current) map.current.getCanvas().style.cursor = "";
+      });
     });
 
     return () => {
@@ -163,9 +249,15 @@ export const TripMap = forwardRef<TripMapHandle, TripMapProps>(function TripMap(
           cursor: pointer;
         `;
       } else {
-        // Overnight stop: numbered circle
+        // Overnight stop: numbered circle, with a booking-status ring
         overnightNumber++;
         el.className = "stop-marker";
+        const bookable = stop.type === "campsite" || stop.type === "transport";
+        const ring = bookable
+          ? stop.bookingReference
+            ? "#2fbf71" // booked
+            : "#e8b23a" // not booked
+          : null;
         el.style.cssText = `
           width: 32px;
           height: 32px;
@@ -178,26 +270,20 @@ export const TripMap = forwardRef<TripMapHandle, TripMapProps>(function TripMap(
           color: white;
           font-weight: bold;
           font-size: 14px;
-          box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+          box-shadow: ${ring ? `0 0 0 2.5px ${ring}, ` : ""}0 2px 5px rgba(0,0,0,0.4);
           cursor: pointer;
         `;
         el.textContent = String(overnightNumber);
       }
 
-      const waypointLabel = isWaypoint ? `<br><span style="color: #f59e0b; font-size: 11px; font-weight: 600;">Waypoint</span>` : "";
-      const popup = new mapboxgl.Popup({ offset: isWaypoint ? 15 : 25 }).setHTML(`
-        <div style="padding: 8px;">
-          <strong>${stop.name}</strong>
-          ${waypointLabel}
-          ${stop.country ? `<br><span style="color: #666;">${stop.country}</span>` : ""}
-          ${!isWaypoint && stop.nights ? `<br><span style="color: #666;">${stop.nights} night${stop.nights > 1 ? "s" : ""}</span>` : ""}
-          ${stop.notes ? `<br><span style="color: #888; font-size: 11px;">${stop.notes.split('.')[0]}</span>` : ""}
-        </div>
-      `);
+      // Clicking a marker selects the stop — same as clicking the list row.
+      el.addEventListener("click", (e) => {
+        e.stopPropagation();
+        onSelectStopRef.current?.(index);
+      });
 
       const marker = new mapboxgl.Marker(el)
         .setLngLat([stop.location.lng, stop.location.lat])
-        .setPopup(popup)
         .addTo(map.current!);
 
       markersRef.current.push(marker);
@@ -213,6 +299,7 @@ export const TripMap = forwardRef<TripMapHandle, TripMapProps>(function TripMap(
       options.forEach((opt) => bounds.extend(opt.coords));
     }
     map.current.fitBounds(bounds, { padding: 50 });
+    applyFocus();
 
     // Campsite option markers — DOM markers (purple/pink dots)
     if (options && options.length > 0) {
@@ -220,7 +307,7 @@ export const TripMap = forwardRef<TripMapHandle, TripMapProps>(function TripMap(
         const el = document.createElement("div");
         const isBooked = !!opt.booked;
         const isRec = !!opt.rec;
-        const markerColor = isBooked ? "#16a34a" : isRec ? "#eab308" : "#8b5cf6";
+        const markerColor = isBooked ? "#4e9a68" : isRec ? ORANGE : SAGE_DEEP;
         el.style.cssText = `
           width: 22px;
           height: 22px;
@@ -239,21 +326,21 @@ export const TripMap = forwardRef<TripMapHandle, TripMapProps>(function TripMap(
         el.textContent = opt.id;
 
         const bookedBadge = isBooked
-          ? `<span style="background:#16a34a;color:white;padding:1px 6px;border-radius:8px;font-size:10px;margin-left:4px;font-weight:700">✓ BOOKED</span>`
+          ? `<span style="background:#4e9a68;color:white;padding:1px 6px;border-radius:8px;font-size:10px;margin-left:4px;font-weight:700">✓ BOOKED</span>`
           : "";
         const recBadge = !isBooked && isRec
-          ? `<span style="background:#eab308;color:white;padding:1px 6px;border-radius:8px;font-size:10px;margin-left:4px;font-weight:700">★ FAV</span>`
+          ? `<span style="background:${ORANGE};color:white;padding:1px 6px;border-radius:8px;font-size:10px;margin-left:4px;font-weight:700">★ FAV</span>`
           : "";
         const bookingRefLine = isBooked && opt.bookingRef
-          ? `<br><span style="color:#16a34a;font-size:11px;font-weight:600">Ref: ${opt.bookingRef}</span>`
+          ? `<br><span style="color:#4e9a68;font-size:11px;font-weight:600">Ref: ${opt.bookingRef}</span>`
           : "";
 
         const popup = new mapboxgl.Popup({ offset: 15, closeButton: true }).setHTML(`
           <div style="padding: 8px; max-width: 220px;">
             <strong>${opt.name}</strong>${bookedBadge}${recBadge}
-            <br><span style="color: #666; font-size: 12px;">For: ${opt.stop}</span>
-            <br><span style="color: #8b5cf6; font-size: 12px;">${opt.rating} · ${opt.price}</span>${bookingRefLine}
-            <br><a href="${opt.url}" target="_blank" style="color: #3b82f6; font-size: 11px;">Website →</a>
+            <br><span style="color: var(--muted-foreground); font-size: 12px;">For: ${opt.stop}</span>
+            <br><span style="color: ${SAGE_DEEP}; font-size: 12px;">${opt.rating} · ${opt.price}</span>${bookingRefLine}
+            <br><a href="${opt.url}" target="_blank" style="color: ${ORANGE}; font-size: 11px;">Website →</a>
           </div>
         `);
 
@@ -277,23 +364,6 @@ export const TripMap = forwardRef<TripMapHandle, TripMapProps>(function TripMap(
         if (!route || !map.current || stale) return;
 
         onRouteCalculated?.(route);
-
-        // Update each marker popup with coloured drive time to next stop
-        markersRef.current.forEach((marker, i) => {
-          const segment = route.segments[i];
-          if (!segment) return;
-          const stop = stops[i];
-          const nextStop = stops[i + 1];
-          const health = segmentHealth(segment.duration, maxDrivingMinutes);
-          marker.getPopup()?.setHTML(`
-            <div style="padding: 8px;">
-              <strong>${stop.name}</strong>
-              ${stop.country ? `<br><span style="color: #666;">${stop.country}</span>` : ""}
-              ${stop.nights ? `<br><span style="color: #666;">${stop.nights} night${stop.nights > 1 ? "s" : ""}</span>` : ""}
-              <br><span style="color: ${HEALTH_COLOURS[health]}; font-size: 12px;">→ ${nextStop.name}: ${formatDuration(segment.duration)} · ${formatDistance(segment.distance)}</span>
-            </div>
-          `);
-        });
 
         const newLayerIds: string[] = [];
         const newSourceIds: string[] = [];
@@ -330,8 +400,9 @@ export const TripMap = forwardRef<TripMapHandle, TripMapProps>(function TripMap(
             layout: { "line-join": "round", "line-cap": "round" },
             paint: {
               "line-color": HEALTH_COLOURS[health],
-              "line-width": 4,
-              "line-opacity": 0.85,
+              "line-width": 5,
+              "line-opacity": 0.95,
+              "line-blur": 0.6,
               ...(isReturn ? { "line-dasharray": [2, 1.5] } : {}),
             },
           });
@@ -422,30 +493,11 @@ export const TripMap = forwardRef<TripMapHandle, TripMapProps>(function TripMap(
           minzoom: 7,
           paint: {
             "circle-radius": 7,
-            "circle-color": "#f59e0b",
+            "circle-color": ORANGE,
             "circle-stroke-width": 2,
             "circle-stroke-color": "#ffffff",
             "circle-opacity": 0.85,
           },
-        });
-
-        map.current!.on("click", "break-stops", (e) => {
-          if (!e.features?.[0] || !map.current) return;
-          const label = e.features[0].properties?.label as string;
-          new mapboxgl.Popup()
-            .setLngLat(e.lngLat)
-            .setHTML(
-              `<div style="padding: 8px;"><strong>Suggested break</strong><br><span style="color: #666; font-size: 12px;">${label}</span></div>`,
-            )
-            .addTo(map.current);
-        });
-
-        map.current!.on("mouseenter", "break-stops", () => {
-          if (map.current) map.current.getCanvas().style.cursor = "pointer";
-        });
-
-        map.current!.on("mouseleave", "break-stops", () => {
-          if (map.current) map.current.getCanvas().style.cursor = "";
         });
 
         newSourceIds.push("break-stops-src");
@@ -453,17 +505,37 @@ export const TripMap = forwardRef<TripMapHandle, TripMapProps>(function TripMap(
 
         routeLayerIdsRef.current = newLayerIds;
         routeSourceIdsRef.current = newSourceIds;
+        applyFocus();
       });
     }
 
     return () => { stale = true; };
-  }, [stops, options, isLoaded, onRouteCalculated, maxDrivingMinutes, returnFromSegment]);
+  }, [stops, options, isLoaded, onRouteCalculated, maxDrivingMinutes, returnFromSegment, applyFocus, redrawNonce]);
 
   return (
     <div
-      ref={mapContainer}
       className={className}
-      style={{ width: "100%", height: "100%", minHeight: "400px" }}
-    />
+      style={{ position: "relative", width: "100%", height: "100%", minHeight: "400px" }}
+    >
+      <div ref={mapContainer} style={{ width: "100%", height: "100%" }} />
+      {/* Base-style switcher */}
+      <div className="glass absolute left-1/2 top-3 z-10 flex -translate-x-1/2 items-center gap-0.5 rounded-full p-0.5 text-[11px]">
+        {STYLE_OPTIONS.map((o) => (
+          <button
+            key={o.key}
+            type="button"
+            onClick={() => setStyleKey(o.key)}
+            className={cn(
+              "focus-ring rounded-full px-2.5 py-1 font-medium transition-colors",
+              styleKey === o.key
+                ? "bg-white/[0.14] text-foreground"
+                : "text-muted-foreground hover:text-foreground",
+            )}
+          >
+            {o.label}
+          </button>
+        ))}
+      </div>
+    </div>
   );
 });
