@@ -152,12 +152,19 @@ export const TripMap = forwardRef<TripMapHandle, TripMapProps>(function TripMap(
   const flyToStop = useCallback((index: number) => {
     const stop = stops[index];
     if (!stop || !map.current) return;
+    // On mobile the bottom sheet covers the lower ~half of the map, so pad the
+    // camera to land the pin in the visible band ABOVE the sheet.
+    const h = map.current.getContainer().clientHeight;
+    const isMobile =
+      typeof window !== "undefined" && window.innerWidth < 768;
     map.current.flyTo({
       center: [stop.location.lng, stop.location.lat],
       zoom: 10,
       duration: 1200,
+      padding: isMobile
+        ? { top: 40, bottom: Math.round(h * 0.5), left: 24, right: 24 }
+        : { top: 0, bottom: 0, left: 0, right: 0 },
     });
-    // Open the marker popup
   }, [stops]);
 
   useImperativeHandle(ref, () => ({ flyToStop }), [flyToStop]);

@@ -10,13 +10,18 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import type { RouteResult } from "@/lib/mapbox/directions";
 import type { CampsiteOption } from "@/lib/campsite-options";
+import { ChevronLeft } from "lucide-react";
+
 import { DayByDayView } from "./day-by-day";
 import { TripCockpit } from "@/components/trip/trip-cockpit";
 import { TripDock, type TripView } from "@/components/trip/trip-dock";
 import { StopDetailPanel } from "@/components/trip/stop-detail-panel";
+import { BottomSheet, type Detent } from "@/components/trip/bottom-sheet";
+import { Badge } from "@/components/ui/badge";
 import {
   BOOKABLE_TYPES,
   buildDriveLegs,
+  countryFlag,
   getBookingStatus,
   type DriveLeg,
   type SupabaseStop,
@@ -94,7 +99,7 @@ export default function TripPageClient() {
   const [loading, setLoading] = useState(true);
   const [deleting, setDeleting] = useState(false);
   const [view, setView] = useState<View>("cockpit");
-  const [sheetOpen, setSheetOpen] = useState(true);
+  const [detent, setDetent] = useState<Detent>("half");
   const [routeLeg, setRouteLeg] = useState<"both" | "outbound" | "return">(
     "both",
   );
@@ -159,10 +164,19 @@ export default function TripPageClient() {
       const leg = allLegs.find((l) => l.index === index);
       if (!leg) return;
       setSelectedLeg((cur) => (cur?.index === index ? null : leg));
+      // Mobile: surface the sheet in detail mode (Map view → back to cockpit).
+      setView((v) => (v === "itinerary" ? "cockpit" : v));
+      setDetent((d) => (d === "peek" ? "half" : d));
       mapRef.current?.flyToStop(index);
     },
     [allLegs],
   );
+
+  // Mobile: the dock's Map/Cockpit toggle drives the sheet detent.
+  useEffect(() => {
+    if (view === "map") setDetent("peek");
+    else if (view === "cockpit") setDetent((d) => (d === "peek" ? "half" : d));
+  }, [view]);
 
   // Outbound / Return leg filter → dims the other leg on the map.
   const focusRange = useMemo((): [number, number] | null => {
@@ -244,8 +258,10 @@ export default function TripPageClient() {
 
   // ---- Main render ----
 
+  const selectedBooking = selectedLeg ? getBookingStatus(selectedLeg.stop) : null;
+
   return (
-    <div className="relative flex h-screen flex-col overflow-hidden bg-background print:h-auto print:overflow-visible">
+    <div className="relative flex h-[100dvh] flex-col overflow-hidden bg-background print:h-auto print:overflow-visible">
       {/* The map IS the page. One floating dock is the only persistent chrome. */}
       <div className="relative flex-1 overflow-hidden bg-background print:overflow-visible">
         {/* Full-bleed map canvas — always mounted (drives route calc). */}
@@ -283,27 +299,9 @@ export default function TripPageClient() {
           </div>
         )}
 
-        {/* Floating cockpit card — Cockpit view only (Map clears it) */}
+        {/* Desktop: floating cockpit rail — Cockpit view only (Map clears it) */}
         {view === "cockpit" && (
-          <aside
-            className={cn(
-              "glass pointer-events-auto z-20 flex flex-col overflow-hidden rounded-2xl border border-white/10 transition-[max-height] duration-300",
-              // Mobile: bottom sheet, raised to clear the dock
-              "absolute inset-x-3 top-auto bottom-[calc(4.75rem+env(safe-area-inset-bottom))]",
-              sheetOpen ? "max-h-[64vh]" : "max-h-[128px]",
-              // Desktop: floating left rail (dock is bottom-centre, no clash)
-              "md:inset-y-4 md:left-4 md:right-auto md:bottom-4 md:top-4 md:max-h-none md:w-[380px]",
-            )}
-          >
-            {/* Mobile grab handle — toggles peek/open */}
-            <button
-              type="button"
-              onClick={() => setSheetOpen((o) => !o)}
-              aria-label={sheetOpen ? "Collapse panel" : "Expand panel"}
-              className="focus-ring flex shrink-0 items-center justify-center py-2.5 md:hidden"
-            >
-              <span className="h-1 w-9 rounded-full bg-muted-foreground/50" />
-            </button>
+          <aside className="glass pointer-events-auto absolute z-20 hidden flex-col overflow-hidden rounded-2xl border border-white/10 md:inset-y-4 md:left-4 md:right-auto md:bottom-4 md:top-4 md:flex md:w-[380px]">
             <TripCockpit
               trip={trip}
               sortedStops={sortedStops}
@@ -319,12 +317,73 @@ export default function TripPageClient() {
           </aside>
         )}
 
-        {/* Stop detail — right rail (desktop) / bottom sheet (mobile) */}
-        {view === "cockpit" && selectedLeg && (
+        {/* Desktop: stop detail right rail (component is hidden md:flex) */}
+        {selectedLeg && (
           <StopDetailPanel
             leg={selectedLeg}
             onClose={() => setSelectedLeg(null)}
           />
+        )}
+
+        {/* Mobile: ONE content sheet — stop list ⇄ stop detail, three detents */}
+        {view !== "itinerary" && (
+          <BottomSheet
+            detent={detent}
+            onDetentChange={setDetent}
+            bodyKey={selectedLeg ? `stop-${selectedLeg.index}` : "list"}
+            header={
+              selectedLeg ? (
+                <div className="flex items-center gap-2 px-3 pb-3">
+                  <button
+                    type="button"
+                    onClick={() => setSelectedLeg(null)}
+                    aria-label="Back to stops"
+                    className="focus-ring -ml-1 flex size-11 shrink-0 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-white/[0.08] hover:text-foreground"
+                  >
+                    <ChevronLeft className="size-5" />
+                  </button>
+                  <span className="font-display min-w-0 flex-1 truncate text-base font-semibold">
+                    {countryFlag(selectedLeg.stop.country)}{" "}
+                    {selectedLeg.stop.name}
+                  </span>
+                  {selectedBooking === "confirmed" && (
+                    <Badge variant="booked">Booked</Badge>
+                  )}
+                  {selectedBooking === "pending" && (
+                    <Badge variant="unbooked">Not booked</Badge>
+                  )}
+                </div>
+              ) : (
+                <div className="flex items-center gap-2 px-5 pb-2">
+                  <span className="font-display truncate text-sm font-semibold">
+                    {trip.title}
+                  </span>
+                </div>
+              )
+            }
+          >
+            {selectedLeg ? (
+              <StopDetailPanel
+                leg={selectedLeg}
+                onClose={() => setSelectedLeg(null)}
+                embedded
+              />
+            ) : (
+              <TripCockpit
+                trip={trip}
+                sortedStops={sortedStops}
+                route={route}
+                totalNights={totalNights}
+                bookingHealth={bookingHealth}
+                eventStopIndex={eventStopIndex}
+                routeLeg={routeLeg}
+                onRouteLegChange={setRouteLeg}
+                selectedIndex={null}
+                onSelectStop={(leg) => selectStopByIndex(leg.index)}
+                flat
+              />
+            )}
+          </BottomSheet>
         )}
 
         {/* Itinerary overlay — covers the shell when active (map stays mounted).

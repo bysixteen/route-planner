@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono, Manrope } from "next/font/google";
 import "./globals.css";
 
@@ -23,6 +23,14 @@ export const metadata: Metadata = {
   title: "Route Planner",
   description:
     "Plan your road trips, track your journey, and share your adventures.",
+};
+
+// viewport-fit=cover so env(safe-area-inset-*) resolves on notched phones.
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
+  themeColor: "#0B0C0E",
 };
 
 export default function RootLayout({

@@ -38,6 +38,9 @@ interface TripCockpitProps {
   selectedIndex: number | null;
   /** Select a stop → opens the detail panel + flies the map. */
   onSelectStop: (leg: DriveLeg) => void;
+  /** Flat = flow inside a parent scroll container (the mobile sheet); no
+   *  internal scroll, no big title (the sheet header shows it). */
+  flat?: boolean;
 }
 
 /**
@@ -55,6 +58,7 @@ export function TripCockpit({
   onRouteLegChange,
   selectedIndex,
   onSelectStop,
+  flat = false,
 }: TripCockpitProps) {
   const allLegs = useMemo(
     () => buildDriveLegs(sortedStops, route?.segments),
@@ -92,12 +96,14 @@ export function TripCockpit({
   }, [selectedIndex]);
 
   return (
-    <div className="flex h-full flex-col overflow-hidden">
+    <div className={cn("flex flex-col", flat ? "" : "h-full overflow-hidden")}>
       {/* Header — separated from the body by space, not a keyline */}
       <div className="shrink-0 px-4 pb-4 pt-3 sm:px-5 md:pt-4">
-        <h1 className="font-display text-xl font-bold tracking-tight">
-          {trip.title}
-        </h1>
+        {!flat && (
+          <h1 className="font-display text-xl font-bold tracking-tight">
+            {trip.title}
+          </h1>
+        )}
 
         {/* Range-style glanceable stats */}
         <div className="mt-3 grid grid-cols-3 gap-2">
@@ -123,7 +129,7 @@ export function TripCockpit({
                 type="button"
                 onClick={() => onRouteLegChange(l)}
                 className={cn(
-                  "focus-ring flex-1 rounded-full px-2 py-1.5 font-medium capitalize transition-colors",
+                  "focus-ring min-h-[40px] flex-1 rounded-full px-2 py-1.5 font-medium capitalize transition-colors",
                   routeLeg === l
                     ? "bg-white/[0.1] text-foreground"
                     : "text-muted-foreground hover:text-foreground",
@@ -139,7 +145,10 @@ export function TripCockpit({
       {/* Stop list */}
       <div
         ref={scrollRef}
-        className="scroll-fade min-h-0 flex-1 overflow-y-auto px-5 pb-4"
+        className={cn(
+          "px-5 pb-4",
+          flat ? "" : "scroll-fade min-h-0 flex-1 overflow-y-auto",
+        )}
       >
         <div className="flex items-center justify-between">
           <span className="coordinate text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">

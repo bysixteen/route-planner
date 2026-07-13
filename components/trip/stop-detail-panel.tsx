@@ -13,6 +13,7 @@ import {
 } from "@/lib/mapbox/directions";
 import { reverseGeocode } from "@/lib/mapbox/reverse-geocode";
 import { formatCoordinate, formatCoordinatePlain } from "@/lib/coordinates";
+import { cn } from "@/lib/utils";
 import {
   countryFlag,
   formatCost,
@@ -23,6 +24,9 @@ import {
 interface StopDetailPanelProps {
   leg: DriveLeg;
   onClose: () => void;
+  /** Rendered inside the mobile sheet: body only, no aside chrome/header
+   *  (the sheet supplies the drag header with back + name + badge). */
+  embedded?: boolean;
 }
 
 /**
@@ -50,8 +54,8 @@ function detectFacilities(notes: string | null, amenities?: string[] | null): st
   return chips;
 }
 
-/** Slide-in stop detail — right rail on desktop, bottom sheet on mobile. */
-export function StopDetailPanel({ leg, onClose }: StopDetailPanelProps) {
+/** Slide-in stop detail — right rail on desktop; body-only inside the mobile sheet. */
+export function StopDetailPanel({ leg, onClose, embedded }: StopDetailPanelProps) {
   const { stop, prevStop, minutes, distance } = leg;
   const booking = getBookingStatus(stop);
   const facilities = detectFacilities(stop.notes, stop.amenities);
@@ -75,37 +79,44 @@ export function StopDetailPanel({ leg, onClose }: StopDetailPanelProps) {
 
   return (
     <aside
-      className="glass scroll-fade pointer-events-auto absolute z-30 flex flex-col overflow-y-auto rounded-2xl border border-white/10 print:hidden
-        inset-x-3 top-auto bottom-[calc(4.75rem+env(safe-area-inset-bottom))] max-h-[70vh]
-        md:inset-y-4 md:left-auto md:right-4 md:bottom-4 md:top-4 md:max-h-none md:w-[380px]"
+      className={cn(
+        embedded
+          ? "flex flex-col"
+          : `glass scroll-fade pointer-events-auto absolute z-30 hidden flex-col overflow-y-auto rounded-2xl border border-white/10 print:hidden
+             md:inset-y-4 md:left-auto md:right-4 md:bottom-4 md:top-4 md:flex md:w-[380px]`,
+      )}
     >
-      {/* Header */}
-      <div className="sticky top-0 flex items-start justify-between gap-2 px-5 pb-3 pt-4">
-        <div className="min-w-0">
-          <h2 className="font-display truncate text-lg font-semibold">
-            {countryFlag(stop.country)} {stop.name}
-          </h2>
-          {stop.full_name && stop.full_name !== stop.name && (
-            <p className="truncate text-xs text-muted-foreground">
-              {stop.full_name}
-            </p>
-          )}
+      {/* Header — desktop rail only; the sheet supplies its own on mobile */}
+      {!embedded && (
+        <div className="sticky top-0 z-10 flex items-start justify-between gap-2 border-b border-white/5 bg-background/80 px-5 pb-3 pt-4 backdrop-blur-md">
+          <div className="min-w-0">
+            <h2 className="font-display truncate text-lg font-semibold">
+              {countryFlag(stop.country)} {stop.name}
+            </h2>
+            {stop.full_name && stop.full_name !== stop.name && (
+              <p className="truncate text-xs text-muted-foreground">
+                {stop.full_name}
+              </p>
+            )}
+          </div>
+          <div className="flex items-center gap-2">
+            {booking === "confirmed" && <Badge variant="booked">Booked</Badge>}
+            {booking === "pending" && (
+              <Badge variant="unbooked">Not booked</Badge>
+            )}
+            <button
+              type="button"
+              onClick={onClose}
+              aria-label="Close"
+              className="focus-ring flex size-9 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-white/[0.08] hover:text-foreground"
+            >
+              <X className="size-4" />
+            </button>
+          </div>
         </div>
-        <div className="flex items-center gap-2">
-          {booking === "confirmed" && <Badge variant="booked">Booked</Badge>}
-          {booking === "pending" && <Badge variant="unbooked">Not booked</Badge>}
-          <button
-            type="button"
-            onClick={onClose}
-            aria-label="Close"
-            className="focus-ring flex size-8 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-white/[0.08] hover:text-foreground"
-          >
-            <X className="size-4" />
-          </button>
-        </div>
-      </div>
+      )}
 
-      <div className="flex flex-col gap-4 px-5 pb-5">
+      <div className="flex flex-col gap-4 px-5 pb-5 pt-4">
         {/* Drive from → to */}
         {prevStop && hasDrive && (
           <div className="flex items-stretch gap-2.5 rounded-lg bg-white/[0.04] p-3 text-xs">
