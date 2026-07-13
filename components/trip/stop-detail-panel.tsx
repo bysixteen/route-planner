@@ -1,14 +1,17 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { X, ExternalLink } from "lucide-react";
 
 import { CopyButton } from "@/components/trip/copy-button";
+import { StopWeather } from "@/components/trip/stop-weather";
 import { Badge } from "@/components/ui/badge";
 import { getBookingExtraForStop } from "@/lib/booking-details";
 import {
   formatDistance,
   formatDuration,
 } from "@/lib/mapbox/directions";
+import { reverseGeocode } from "@/lib/mapbox/reverse-geocode";
 import { formatCoordinate, formatCoordinatePlain } from "@/lib/coordinates";
 import {
   countryFlag,
@@ -54,6 +57,21 @@ export function StopDetailPanel({ leg, onClose }: StopDetailPanelProps) {
   const facilities = detectFacilities(stop.notes, stop.amenities);
   const extra = getBookingExtraForStop(stop);
   const hasDrive = minutes > 0;
+
+  // Address: prefer the confirmed static one, else reverse-geocode the coords.
+  const [geoAddress, setGeoAddress] = useState<string | null>(null);
+  useEffect(() => {
+    if (extra?.address) return;
+    let active = true;
+    setGeoAddress(null);
+    reverseGeocode(stop.lat, stop.lng).then((a) => {
+      if (active) setGeoAddress(a);
+    });
+    return () => {
+      active = false;
+    };
+  }, [stop.lat, stop.lng, extra?.address]);
+  const address = extra?.address ?? geoAddress;
 
   return (
     <aside
@@ -108,21 +126,42 @@ export function StopDetailPanel({ leg, onClose }: StopDetailPanelProps) {
           </div>
         )}
 
-        {/* Satnav coordinates */}
+        {/* Address & satnav — address primary, coordinates as fallback */}
         <div>
           <p className="coordinate mb-1.5 text-[10px] uppercase tracking-[0.14em] text-muted-foreground/70">
-            Location
+            Address &amp; satnav
           </p>
-          <div className="flex flex-wrap items-center gap-2">
-            <span className="coordinate text-xs text-muted-foreground">
-              {formatCoordinate(stop.lat, stop.lng)}
-            </span>
-            <CopyButton
-              value={formatCoordinatePlain(stop.lat, stop.lng)}
-              label="Copy for satnav"
-              title="Copy coordinates for satnav"
-            />
-          </div>
+          {address ? (
+            <>
+              <p className="mb-2 text-sm leading-snug">{address}</p>
+              <div className="flex flex-wrap items-center gap-2">
+                <CopyButton
+                  value={address}
+                  label="Copy address for satnav"
+                  title="Copy address for satnav"
+                />
+                <span className="coordinate text-[11px] text-muted-foreground">
+                  {formatCoordinate(stop.lat, stop.lng)}
+                </span>
+                <CopyButton
+                  value={formatCoordinatePlain(stop.lat, stop.lng)}
+                  label="Copy coordinates"
+                  title="Copy coordinates for satnav"
+                />
+              </div>
+            </>
+          ) : (
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="coordinate text-xs text-muted-foreground">
+                {formatCoordinate(stop.lat, stop.lng)}
+              </span>
+              <CopyButton
+                value={formatCoordinatePlain(stop.lat, stop.lng)}
+                label="Copy for satnav"
+                title="Copy coordinates for satnav"
+              />
+            </div>
+          )}
         </div>
 
         {/* Booking / refs / cost / links */}
@@ -180,6 +219,9 @@ export function StopDetailPanel({ leg, onClose }: StopDetailPanelProps) {
             </div>
           </div>
         )}
+
+        {/* Weather at arrival */}
+        <StopWeather lat={stop.lat} lng={stop.lng} date={stop.arrival_date} />
 
         {/* Check-in (from the confirmation email) */}
         {extra && (extra.checkIn || extra.checkOut || extra.arrivalNote) && (

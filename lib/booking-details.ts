@@ -23,6 +23,8 @@ export interface BookingExtra {
   siteInfoLabel?: string;
   /** Action items / things to note before travelling. */
   reminders?: string[];
+  /** Postal address (from the confirmation email) — primary satnav target. */
+  address?: string;
   /** Whether a campervan awning may be pitched here. */
   awning?: "yes" | "no" | "conditional";
   /** Short context for the awning rule (source / caveat). */
@@ -97,6 +99,7 @@ const BY_NAME: Record<string, BookingExtra> = {
   },
   // Gerhardhof, Wildermieming (Ref 2026-034828) — booked "Stellplatz Transit"
   Wildermieming: {
+    address: "Gerhardhof 1, 6413 Wildermieming, Austria",
     arrivalNote: "Gerhardhof 1, 6413 Wildermieming. Reception +43 5264 5240.",
     awning: "conditional",
     awningNote:
@@ -105,6 +108,7 @@ const BY_NAME: Record<string, BookingExtra> = {
   // Wachau (Melk) — Campingplatz der Stadt Melk, 23–24 Jul, pitch 8
   Wachau: {
     confirmed: true,
+    address: "Kolomaniau 1/1, 3390 Melk, Austria",
     checkIn: "16:00 – 18:00",
     checkOut: "08:00 – 10:00",
     arrivalNote:
@@ -119,6 +123,7 @@ const BY_NAME: Record<string, BookingExtra> = {
   },
   // Donaupark Camping Klosterneuburg (ÖAMTC) — 27–28 Jul, awning confirmed by site
   Klosterneuburg: {
+    address: "In der Au 1, 3400 Klosterneuburg, Austria",
     checkIn: "From 12:00",
     arrivalNote:
       "Barrier open until 22:00. If reception is closed on arrival, free-pitch info is posted by the reception entrance. In der Au 1, 3400 Klosterneuburg (+43 2243 25877).",
