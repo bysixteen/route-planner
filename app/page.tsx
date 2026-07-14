@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 
 import { getAllTrips } from "@/lib/supabase/queries";
+import { PwaInstall } from "@/components/pwa-install";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -129,7 +130,8 @@ export default function HomePage() {
           >
             Route Planner
           </Link>
-          <nav className="flex gap-2">
+          <nav className="flex items-center gap-3">
+            <PwaInstall />
             <Link href="/plan">
               <Button size="sm">Plan a Trip</Button>
             </Link>
