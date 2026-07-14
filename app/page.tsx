@@ -122,7 +122,7 @@ export default function HomePage() {
 
   return (
     <div className="min-h-screen bg-background">
-      <header className="border-b border-white/5">
+      <header className="border-b border-white/5 pt-[env(safe-area-inset-top)]">
         <div className="container mx-auto flex items-center justify-between px-4 py-4">
           <Link
             href="/"

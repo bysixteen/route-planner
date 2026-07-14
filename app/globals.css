@@ -243,15 +243,19 @@
   background: rgba(255, 255, 255, 0.06) !important;
 }
 
-/* Keep controls + attribution clear of the rounded map-panel corners. */
+/* Keep controls + attribution clear of the rounded corners AND the iPhone
+ * safe areas (notch / Dynamic Island up top, home indicator at the bottom). */
 .mapboxgl-ctrl-top-right {
-  margin: 8px 8px 0 0;
+  margin: calc(8px + env(safe-area-inset-top)) calc(8px + env(safe-area-inset-right))
+    0 0;
 }
 .mapboxgl-ctrl-bottom-right {
-  margin: 0 8px 6px 0;
+  margin: 0 calc(8px + env(safe-area-inset-right))
+    calc(6px + env(safe-area-inset-bottom)) 0;
 }
 .mapboxgl-ctrl-bottom-left {
-  margin: 0 0 6px 8px;
+  margin: 0 0 calc(6px + env(safe-area-inset-bottom))
+    calc(8px + env(safe-area-inset-left));
 }
 
 

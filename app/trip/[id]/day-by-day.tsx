@@ -313,7 +313,7 @@ export function DayByDayView({
 
   return (
     <div className="min-h-full bg-background text-foreground print:bg-white">
-      <div className="mx-auto max-w-3xl px-6 pb-28 pt-8 print:px-4 print:py-4">
+      <div className="mx-auto max-w-3xl px-6 pb-28 pt-[calc(2rem+env(safe-area-inset-top))] print:px-4 print:py-4">
         {/* ── Trip header ─────────────────────────────────────────────── */}
         <div className="mb-6">
           <p className="coordinate text-xs font-semibold uppercase tracking-widest text-muted-foreground">

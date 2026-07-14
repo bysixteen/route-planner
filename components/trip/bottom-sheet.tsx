@@ -36,6 +36,7 @@ export function BottomSheet({
   bodyKey?: string;
 }) {
   const [vh, setVh] = useState(0);
+  const [safeBottom, setSafeBottom] = useState(0);
   const [dragY, setDragY] = useState<number | null>(null);
   const bodyRef = useRef<HTMLDivElement>(null);
   const drag = useRef<{
@@ -58,12 +59,23 @@ export function BottomSheet({
     };
   }, []);
 
+  // Measure the home-indicator inset once so the sheet clears it + the dock.
+  useEffect(() => {
+    const probe = document.createElement("div");
+    probe.style.cssText =
+      "position:fixed;bottom:0;left:0;height:env(safe-area-inset-bottom);visibility:hidden;pointer-events:none;";
+    document.body.appendChild(probe);
+    setSafeBottom(probe.offsetHeight);
+    probe.remove();
+  }, []);
+
   // Reset scroll to top when the content mode changes.
   useEffect(() => {
     bodyRef.current?.scrollTo({ top: 0 });
   }, [bodyKey]);
 
-  const availH = Math.max(0, vh - CLEARANCE);
+  const clearance = CLEARANCE + safeBottom;
+  const availH = Math.max(0, vh - clearance);
   const heightFor = (d: Detent) =>
     d === "peek"
       ? PEEK_PX
@@ -129,7 +141,7 @@ export function BottomSheet({
           detent === "full" && "bg-background/95",
         )}
         style={{
-          bottom: CLEARANCE,
+          bottom: clearance,
           height: availH || undefined,
           transform: `translateY(${translate}px)`,
           transition: dragY == null ? "transform 300ms ease-out" : "none",

@@ -526,7 +526,7 @@ export const TripMap = forwardRef<TripMapHandle, TripMapProps>(function TripMap(
     >
       <div ref={mapContainer} style={{ width: "100%", height: "100%" }} />
       {/* Base-style switcher */}
-      <div className="glass absolute left-1/2 top-3 z-10 flex -translate-x-1/2 items-center gap-0.5 rounded-full p-0.5 text-[11px]">
+      <div className="glass absolute left-1/2 top-[calc(0.75rem+env(safe-area-inset-top))] z-10 flex -translate-x-1/2 items-center gap-0.5 rounded-full p-0.5 text-[11px]">
         {STYLE_OPTIONS.map((o) => (
           <button
             key={o.key}
