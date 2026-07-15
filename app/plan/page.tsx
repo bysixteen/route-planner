@@ -397,6 +397,7 @@ export default function PlanPage() {
             <Input
               value={tripTitle}
               onChange={(e) => setTripTitle(e.target.value)}
+              aria-label="Trip title"
               className="w-64 border-none bg-transparent text-lg font-semibold focus-visible:ring-1"
             />
           </div>
@@ -766,7 +767,8 @@ export default function PlanPage() {
                                 <input
                                   type="text"
                                   placeholder="Add stop"
-                                  className="flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground/50"
+                                  aria-label="Add a stop"
+                                  className="flex-1 rounded bg-transparent text-sm outline-none placeholder:text-muted-foreground/50 focus-visible:ring-2 focus-visible:ring-ring"
                                   onFocus={() => {
                                     if (lastStopInDay) {
                                       setActiveInsertIndex(

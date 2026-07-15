@@ -193,7 +193,7 @@ function Stat({
           {value}
         </div>
       )}
-      <div className="coordinate mt-2 text-[10px] uppercase tracking-[0.12em] text-muted-foreground/70">
+      <div className="coordinate mt-2 text-[10px] uppercase tracking-[0.12em] text-muted-foreground">
         {label}
       </div>
     </div>

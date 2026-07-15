@@ -93,7 +93,7 @@ export function TripDock({
             className={cn(
               "focus-ring flex min-h-[44px] items-center gap-1.5 rounded-full px-3 text-sm font-medium transition-colors",
               view === key
-                ? "bg-highlight/15 text-volt-bright"
+                ? "bg-highlight/20 text-[#8fb0ff]"
                 : "text-muted-foreground hover:text-foreground",
             )}
           >

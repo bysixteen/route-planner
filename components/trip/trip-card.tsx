@@ -60,7 +60,7 @@ export function TripCard({ trip }: TripCardProps) {
               <p className="text-xs">
                 {trip.vehicle.name}
                 {trip.vehicle.make && trip.vehicle.model && (
-                  <span className="text-muted-foreground/70">
+                  <span className="text-muted-foreground">
                     {" "}
                     • {trip.vehicle.make} {trip.vehicle.model}
                   </span>

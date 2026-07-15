@@ -798,7 +798,7 @@ function RestRow({ entry, isLast }: { entry: DayEntry; isLast: boolean }) {
             {fmtDayFull(entry.date)}
           </span>
           <span className="text-muted-foreground/40">·</span>
-          <span className="italic text-muted-foreground/70">
+          <span className="italic text-muted-foreground">
             Rest day — {entry.stop.name}
           </span>
           <Moon className="ml-auto size-3.5 text-muted-foreground" aria-hidden="true" />

@@ -82,7 +82,7 @@ function TripCard({ trip }: { trip: TripListItem }) {
               <p className="text-xs">
                 {trip.vehicles.name}
                 {trip.vehicles.make && trip.vehicles.model && (
-                  <span className="text-muted-foreground/70">
+                  <span className="text-muted-foreground">
                     {" "}
                     • {trip.vehicles.make} {trip.vehicles.model}
                   </span>

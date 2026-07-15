@@ -274,7 +274,7 @@ export const TripMap = forwardRef<TripMapHandle, TripMapProps>(function TripMap(
           display: flex;
           align-items: center;
           justify-content: center;
-          color: white;
+          color: #0B0C0E;
           font-weight: bold;
           font-size: 14px;
           box-shadow: ${ring ? `0 0 0 2.5px ${ring}, ` : ""}0 2px 5px rgba(0,0,0,0.4);
