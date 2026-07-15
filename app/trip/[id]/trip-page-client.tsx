@@ -352,9 +352,9 @@ export default function TripPageClient() {
           </div>
         )}
 
-        {/* Desktop: floating cockpit rail — kept in Map view too (the map is
-            always visible on desktop; Map should declutter, not remove the index) */}
-        {view !== "itinerary" && (
+        {/* Desktop: floating cockpit rail — Route view shows the list; Map view
+            clears it to a full-bleed map (that's the difference between them). */}
+        {view === "cockpit" && (
           <aside className="glass pointer-events-auto absolute z-20 hidden flex-col overflow-hidden rounded-2xl border border-white/10 md:inset-y-4 md:left-4 md:right-auto md:bottom-4 md:top-4 md:flex md:w-[380px]">
             <TripCockpit
               trip={trip}

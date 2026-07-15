@@ -108,16 +108,16 @@ export const TripMap = forwardRef<TripMapHandle, TripMapProps>(function TripMap(
   const [isLoaded, setIsLoaded] = useState(false);
   const [styleKey, setStyleKey] = useState<MapStyleKey>("dark");
   const [redrawNonce, setRedrawNonce] = useState(0);
-  const styleInitDone = useRef(false);
+  // Track the style actually applied to the map (initial is set on init). This
+  // avoids a mount-timing bug where map.current is null on first render and the
+  // first user style change gets swallowed.
+  const appliedStyle = useRef<MapStyleKey>("dark");
 
   // Swap the base style at runtime. Markers persist; the route layers are
   // wiped by setStyle, so bump a nonce on style.load to redraw them.
   useEffect(() => {
-    if (!map.current) return;
-    if (!styleInitDone.current) {
-      styleInitDone.current = true;
-      return; // initial style is already applied on init
-    }
+    if (!map.current || styleKey === appliedStyle.current) return;
+    appliedStyle.current = styleKey;
     map.current.setStyle(MAP_STYLES[styleKey]);
     map.current.once("style.load", () => setRedrawNonce((n) => n + 1));
   }, [styleKey]);
