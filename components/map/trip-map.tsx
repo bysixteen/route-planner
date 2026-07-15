@@ -1,9 +1,23 @@
 "use client";
 
 import { useEffect, useRef, useState, useCallback, useImperativeHandle, forwardRef } from "react";
+import { createRoot, type Root } from "react-dom/client";
 import mapboxgl from "mapbox-gl";
 import "mapbox-gl/dist/mapbox-gl.css";
-import { Camera, Fuel } from "lucide-react";
+import {
+  IconStack2,
+  IconX,
+  IconCheck,
+  IconCamera,
+  IconBuildingCastle,
+  IconSwimming,
+  IconTrees,
+  IconRollercoaster,
+  IconToolsKitchen2,
+  IconBuildingCommunity,
+  IconGasStation,
+  type Icon as TablerIcon,
+} from "@tabler/icons-react";
 
 import {
   MAPBOX_TOKEN,
@@ -16,21 +30,35 @@ import { getRoute, formatDuration, formatDistance, type RouteResult } from "@/li
 import { cn } from "@/lib/utils";
 import { buildMapsUrl } from "@/lib/maps-link";
 import { POI_DATA, type PoiType } from "@/lib/poi-data";
+import type { FuelStation } from "@/lib/fuel";
 import type { Stop } from "@/lib/types";
 import type { CampsiteOption } from "@/lib/campsite-options";
 
 const escHtml = (s: string) =>
   s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 
-const POI_EMOJI: Record<PoiType, string> = {
-  viewpoint: "📷",
-  lake: "🏊",
-  castle: "🏰",
-  restaurant: "🍽️",
-  attraction: "🎡",
-  nature: "🌲",
-  town: "🏘️",
-};
+// Sightseeing categories — Tabler glyphs (consistent line-icon system, no emoji).
+const POI_CATS: { type: PoiType; label: string; Icon: TablerIcon }[] = [
+  { type: "viewpoint", label: "Viewpoints", Icon: IconCamera },
+  { type: "castle", label: "Castles", Icon: IconBuildingCastle },
+  { type: "lake", label: "Lakes & swims", Icon: IconSwimming },
+  { type: "nature", label: "Nature", Icon: IconTrees },
+  { type: "attraction", label: "Attractions", Icon: IconRollercoaster },
+  { type: "restaurant", label: "Food stops", Icon: IconToolsKitchen2 },
+  { type: "town", label: "Towns", Icon: IconBuildingCommunity },
+];
+const POI_ICON: Record<PoiType, TablerIcon> = Object.fromEntries(
+  POI_CATS.map((c) => [c.type, c.Icon]),
+) as Record<PoiType, TablerIcon>;
+
+/** Render a Tabler icon into a fresh DOM node (for imperative Mapbox markers). */
+function iconEl(Icon: TablerIcon, roots: Root[], size = 15): HTMLDivElement {
+  const el = document.createElement("div");
+  const root = createRoot(el);
+  root.render(<Icon size={size} stroke={1.9} />);
+  roots.push(root);
+  return el;
+}
 
 type MapStyleKey = keyof typeof MAP_STYLES;
 const STYLE_OPTIONS: { key: MapStyleKey; label: string }[] = [
@@ -141,11 +169,15 @@ export const TripMap = forwardRef<TripMapHandle, TripMapProps>(function TripMap(
   const routeSourceIdsRef = useRef<string[]>([]);
   const [isLoaded, setIsLoaded] = useState(false);
   const [styleKey, setStyleKey] = useState<MapStyleKey>("dark");
-  const [showSights, setShowSights] = useState(false);
-  const poiMarkersRef = useRef<mapboxgl.Marker[]>([]);
-  const [showFuel, setShowFuel] = useState(false);
+  // Overlay layer system (replaces the old top-centre pills).
+  const [layersOpen, setLayersOpen] = useState(false);
+  const [sightCats, setSightCats] = useState<Set<PoiType>>(new Set());
+  const [fuelOn, setFuelOn] = useState(false);
   const [fuelZoomedOut, setFuelZoomedOut] = useState(false);
+  const poiMarkersRef = useRef<mapboxgl.Marker[]>([]);
+  const poiRootsRef = useRef<Root[]>([]);
   const fuelMarkersRef = useRef<mapboxgl.Marker[]>([]);
+  const fuelRootsRef = useRef<Root[]>([]);
   const [redrawNonce, setRedrawNonce] = useState(0);
   // Track the style actually applied to the map (initial is set on init). This
   // avoids a mount-timing bug where map.current is null on first render and the
@@ -161,41 +193,47 @@ export const TripMap = forwardRef<TripMapHandle, TripMapProps>(function TripMap(
     map.current.once("style.load", () => setRedrawNonce((n) => n + 1));
   }, [styleKey]);
 
-  // Sightseeing POI layer — togglable emoji markers, each with a popup.
+  // Sightseeing POI layer — Tabler-glyph discs, filtered by enabled category.
   useEffect(() => {
     if (!map.current || !isLoaded) return;
     poiMarkersRef.current.forEach((m) => m.remove());
     poiMarkersRef.current = [];
-    if (!showSights) return;
-    const esc = (s: string) =>
-      s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
-    POI_DATA.forEach((p) => {
-      const el = document.createElement("div");
-      el.textContent = POI_EMOJI[p.type];
-      el.style.cssText =
-        "font-size:18px;line-height:1;cursor:pointer;filter:drop-shadow(0 1px 2px rgba(0,0,0,0.7));";
-      const popup = new mapboxgl.Popup({ maxWidth: "250px", offset: 14 })
-        .setHTML(
-          `<div class="pop-title">${esc(p.name)}</div>` +
-            `<div class="pop-sub" style="color:var(--foreground);opacity:.85">${esc(p.blurb)}</div>` +
-            `<div style="margin-top:6px;font-size:11px;color:var(--muted-foreground);text-transform:capitalize">${p.type} · ${p.stopLength} · ${esc(p.source)}</div>` +
-            `<a href="${buildMapsUrl(p.lat, p.lng, p.name)}" target="_blank" rel="noopener noreferrer" style="display:inline-block;margin-top:6px;font-size:12px;font-weight:600;color:var(--volt-tint);text-decoration:none">Navigate →</a>`,
-        );
-      const m = new mapboxgl.Marker(el)
+    poiRootsRef.current.forEach((r) => queueMicrotask(() => r.unmount()));
+    poiRootsRef.current = [];
+    if (sightCats.size === 0) return;
+    POI_DATA.filter((p) => sightCats.has(p.type)).forEach((p) => {
+      const el = iconEl(POI_ICON[p.type], poiRootsRef.current);
+      el.className = "map-disc map-disc--poi";
+      const popup = new mapboxgl.Popup({ maxWidth: "250px", offset: 16 }).setHTML(
+        `<div class="pop-title">${escHtml(p.name)}</div>` +
+          `<div class="pop-sub" style="color:var(--foreground);opacity:.85">${escHtml(p.blurb)}</div>` +
+          `<div style="margin-top:6px;font-size:11px;color:var(--muted-foreground);text-transform:capitalize">${p.type} · ${p.stopLength} · ${escHtml(p.source)}</div>` +
+          `<a href="${buildMapsUrl(p.lat, p.lng, p.name)}" target="_blank" rel="noopener noreferrer" style="display:inline-block;margin-top:6px;font-size:12px;font-weight:600;color:var(--volt-tint);text-decoration:none">Navigate →</a>`,
+      );
+      const m = new mapboxgl.Marker({ element: el, anchor: "center" })
         .setLngLat([p.lng, p.lat])
         .setPopup(popup)
         .addTo(map.current!);
       poiMarkersRef.current.push(m);
     });
-  }, [showSights, isLoaded, redrawNonce]);
+  }, [sightCats, isLoaded, redrawNonce]);
 
-  // Live petrol stations from OpenStreetMap (free, no key) for the visible area.
+  // Live diesel prices for the visible area via the /api/fuel proxy. Cheapest
+  // stations render as bright volt price-pills; dearer ones recede; unpriced
+  // stations show a small pump glyph. Overlapping pills are de-cluttered so the
+  // cheapest in any crowded patch wins the pixel.
+  const clearFuel = useCallback(() => {
+    fuelMarkersRef.current.forEach((mk) => mk.remove());
+    fuelMarkersRef.current = [];
+    fuelRootsRef.current.forEach((r) => queueMicrotask(() => r.unmount()));
+    fuelRootsRef.current = [];
+  }, []);
+
   const loadFuel = useCallback(async () => {
     const m = map.current;
     if (!m) return;
-    fuelMarkersRef.current.forEach((mk) => mk.remove());
-    fuelMarkersRef.current = [];
-    if (!showFuel) return;
+    clearFuel();
+    if (!fuelOn) return;
     if (m.getZoom() < 8.5) {
       setFuelZoomedOut(true);
       return;
@@ -203,38 +241,65 @@ export const TripMap = forwardRef<TripMapHandle, TripMapProps>(function TripMap(
     setFuelZoomedOut(false);
     const b = m.getBounds();
     if (!b) return;
-    const q = `[out:json][timeout:12];node["amenity"="fuel"](${b.getSouth().toFixed(4)},${b.getWest().toFixed(4)},${b.getNorth().toFixed(4)},${b.getEast().toFixed(4)});out body 80;`;
+    const qs = `s=${b.getSouth().toFixed(4)}&w=${b.getWest().toFixed(4)}&n=${b.getNorth().toFixed(4)}&e=${b.getEast().toFixed(4)}`;
     try {
-      const res = await fetch(
-        "https://overpass-api.de/api/interpreter?data=" + encodeURIComponent(q),
-      );
+      const res = await fetch(`/api/fuel?${qs}`);
       if (!res.ok) return;
-      const data = await res.json();
-      if (!map.current || !showFuel) return;
-      for (const n of data.elements ?? []) {
-        if (n.lat == null || n.lon == null) continue;
-        const name: string = n.tags?.name || n.tags?.brand || "Petrol station";
-        const el = document.createElement("div");
-        el.textContent = "⛽";
-        el.style.cssText =
-          "font-size:15px;line-height:1;cursor:pointer;filter:drop-shadow(0 1px 2px rgba(0,0,0,0.7));";
-        const popup = new mapboxgl.Popup({ maxWidth: "220px", offset: 12 }).setHTML(
-          `<div class="pop-title">${escHtml(name)}</div>` +
-            (n.tags?.brand && n.tags.brand !== name
-              ? `<div class="pop-sub">${escHtml(n.tags.brand)}</div>`
-              : "") +
-            `<a href="${buildMapsUrl(n.lat, n.lon, name)}" target="_blank" rel="noopener noreferrer" style="display:inline-block;margin-top:6px;font-size:12px;font-weight:600;color:var(--volt-tint);text-decoration:none">Navigate →</a>`,
+      const data: { stations: FuelStation[] } = await res.json();
+      if (!map.current || !fuelOn) return;
+
+      const priced = data.stations
+        .filter((s) => s.dieselPrice != null)
+        .sort((a, b2) => a.dieselPrice! - b2.dieselPrice!);
+      const unpriced = data.stations.filter((s) => s.dieselPrice == null);
+
+      // Tercile thresholds across the visible priced set for the volt→dim grade.
+      const prices = priced.map((s) => s.dieselPrice!);
+      const t1 = prices[Math.floor(prices.length / 3)] ?? Infinity;
+      const t2 = prices[Math.floor((prices.length * 2) / 3)] ?? Infinity;
+
+      // Greedy de-overlap: cheapest first, skip anything within 44px of a placed pill.
+      const placed: { x: number; y: number }[] = [];
+      const tooClose = (x: number, y: number) =>
+        placed.some((p) => Math.hypot(p.x - x, p.y - y) < 44);
+
+      const render = (s: FuelStation, pricePill: boolean) => {
+        const pt = map.current!.project([s.lng, s.lat]);
+        if (tooClose(pt.x, pt.y)) return;
+        placed.push({ x: pt.x, y: pt.y });
+        let el: HTMLDivElement;
+        if (pricePill && s.dieselPrice != null) {
+          const grade =
+            s.dieselPrice <= t1 ? "cheap" : s.dieselPrice <= t2 ? "mid" : "dear";
+          el = document.createElement("div");
+          el.className = `fuel-pill fuel-pill--${grade}`;
+          el.textContent = `€${s.dieselPrice.toFixed(2)}`;
+        } else {
+          el = iconEl(IconGasStation, fuelRootsRef.current, 14);
+          el.className = "map-disc map-disc--fuel";
+        }
+        const priceLine =
+          s.dieselPrice != null
+            ? `<div class="pop-sub" style="color:var(--volt-tint);font-weight:600">Diesel €${s.dieselPrice.toFixed(2)}/L</div>`
+            : `<div class="pop-sub" style="color:var(--muted-foreground)">No live price here</div>`;
+        const popup = new mapboxgl.Popup({ maxWidth: "220px", offset: 14 }).setHTML(
+          `<div class="pop-title">${escHtml(s.name)}</div>` +
+            priceLine +
+            `<a href="${buildMapsUrl(s.lat, s.lng, s.name)}" target="_blank" rel="noopener noreferrer" style="display:inline-block;margin-top:6px;font-size:12px;font-weight:600;color:var(--volt-tint);text-decoration:none">Navigate →</a>`,
         );
-        const marker = new mapboxgl.Marker(el)
-          .setLngLat([n.lon, n.lat])
+        const marker = new mapboxgl.Marker({ element: el, anchor: "center" })
+          .setLngLat([s.lng, s.lat])
           .setPopup(popup)
           .addTo(map.current!);
         fuelMarkersRef.current.push(marker);
-      }
+      };
+
+      priced.forEach((s) => render(s, true));
+      unpriced.forEach((s) => render(s, false));
     } catch {
-      /* Overpass unavailable — fail silent */
+      /* proxy/feed unavailable — fail silent */
     }
-  }, [showFuel]);
+  }, [fuelOn, clearFuel]);
 
   useEffect(() => {
     const m = map.current;
@@ -242,7 +307,7 @@ export const TripMap = forwardRef<TripMapHandle, TripMapProps>(function TripMap(
     let t: ReturnType<typeof setTimeout> | null = null;
     const onMove = () => {
       if (t) clearTimeout(t);
-      t = setTimeout(loadFuel, 400);
+      t = setTimeout(loadFuel, 450);
     };
     loadFuel();
     m.on("moveend", onMove);
@@ -250,7 +315,7 @@ export const TripMap = forwardRef<TripMapHandle, TripMapProps>(function TripMap(
       if (t) clearTimeout(t);
       m.off("moveend", onMove);
     };
-  }, [showFuel, isLoaded, loadFuel]);
+  }, [fuelOn, isLoaded, loadFuel]);
 
   // Dim markers + route segments outside the focused leg.
   const applyFocus = useCallback(() => {
@@ -315,7 +380,7 @@ export const TripMap = forwardRef<TripMapHandle, TripMapProps>(function TripMap(
     // Zoom control on desktop only — pinch handles it on mobile, and it
     // otherwise crowds the top-right against the sheet + safe area.
     if (typeof window !== "undefined" && window.innerWidth >= 768) {
-      map.current.addControl(new mapboxgl.NavigationControl(), "top-right");
+      map.current.addControl(new mapboxgl.NavigationControl(), "bottom-right");
     }
 
     map.current.on("load", () => {
@@ -671,67 +736,161 @@ export const TripMap = forwardRef<TripMapHandle, TripMapProps>(function TripMap(
     return () => { stale = true; };
   }, [stops, options, isLoaded, onRouteCalculated, maxDrivingMinutes, returnFromSegment, applyFocus, redrawNonce]);
 
+  const activeLayerCount = (sightCats.size > 0 ? 1 : 0) + (fuelOn ? 1 : 0);
+
   return (
     <div
       className={className}
       style={{ position: "relative", width: "100%", height: "100%", minHeight: "400px" }}
     >
       <div ref={mapContainer} style={{ width: "100%", height: "100%" }} />
-      {/* Base-style switcher */}
-      <div className="glass absolute left-1/2 top-[calc(0.75rem+env(safe-area-inset-top))] z-10 flex -translate-x-1/2 items-center gap-0.5 rounded-full p-0.5 text-[11px]">
-        {STYLE_OPTIONS.map((o) => (
-          <button
-            key={o.key}
-            type="button"
-            onClick={() => setStyleKey(o.key)}
-            className={cn(
-              "focus-ring rounded-full px-2.5 py-1 font-medium transition-colors",
-              styleKey === o.key
-                ? "bg-white/[0.14] text-foreground"
-                : "text-muted-foreground hover:text-foreground",
-            )}
-          >
-            {o.label}
-          </button>
-        ))}
-      </div>
 
-      {/* Map layer toggles: sights + live fuel */}
-      <div className="absolute left-1/2 top-[calc(3.25rem+env(safe-area-inset-top))] z-10 flex -translate-x-1/2 items-center gap-2">
+      {/* Single Layers control (top-right) → glass panel. Replaces scattered pills. */}
+      <div className="absolute right-3 top-[calc(0.75rem+env(safe-area-inset-top))] z-30">
         <button
           type="button"
-          onClick={() => setShowSights((s) => !s)}
-          aria-pressed={showSights}
+          onClick={() => setLayersOpen((o) => !o)}
+          aria-expanded={layersOpen}
+          aria-label="Map layers"
           className={cn(
-            "glass focus-ring flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[11px] font-medium transition-colors",
-            showSights
+            "glass focus-ring relative flex size-10 items-center justify-center rounded-xl transition-colors",
+            layersOpen || activeLayerCount > 0
               ? "text-volt-tint"
-              : "text-muted-foreground hover:text-foreground",
+              : "text-foreground hover:text-volt-tint",
           )}
         >
-          <Camera className="size-3.5" />
-          {showSights ? "Sights on" : `Sights (${POI_DATA.length})`}
-        </button>
-        <button
-          type="button"
-          onClick={() => setShowFuel((s) => !s)}
-          aria-pressed={showFuel}
-          className={cn(
-            "glass focus-ring flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[11px] font-medium transition-colors",
-            showFuel
-              ? "text-volt-tint"
-              : "text-muted-foreground hover:text-foreground",
+          <IconStack2 size={19} stroke={1.9} />
+          {activeLayerCount > 0 && (
+            <span className="absolute -right-1 -top-1 flex size-4 items-center justify-center rounded-full bg-volt text-[9px] font-bold text-white tabular-nums">
+              {activeLayerCount}
+            </span>
           )}
-        >
-          <Fuel className="size-3.5" />
-          {showFuel ? "Fuel on" : "Fuel"}
         </button>
-        {showFuel && fuelZoomedOut && (
-          <span className="glass rounded-full px-2.5 py-1.5 text-[10px] text-muted-foreground">
-            Zoom in for stations
-          </span>
+
+        {layersOpen && (
+          <div className="glass absolute right-0 top-12 max-h-[70vh] w-64 overflow-y-auto overscroll-contain rounded-2xl p-3 text-[13px] shadow-xl">
+            <div className="mb-2 flex items-center justify-between">
+              <span className="label text-muted-foreground">Map layers</span>
+              <button
+                type="button"
+                onClick={() => setLayersOpen(false)}
+                aria-label="Close"
+                className="focus-ring -m-1 rounded-full p-1 text-muted-foreground hover:text-foreground"
+              >
+                <IconX size={15} />
+              </button>
+            </div>
+
+            {/* Base map */}
+            <div className="mb-1 flex gap-1 rounded-lg bg-white/[0.04] p-1">
+              {STYLE_OPTIONS.map((o) => (
+                <button
+                  key={o.key}
+                  type="button"
+                  onClick={() => setStyleKey(o.key)}
+                  className={cn(
+                    "focus-ring flex-1 rounded-md px-2 py-1.5 text-[12px] font-medium transition-colors",
+                    styleKey === o.key
+                      ? "bg-white/[0.12] text-foreground"
+                      : "text-muted-foreground hover:text-foreground",
+                  )}
+                >
+                  {o.label}
+                </button>
+              ))}
+            </div>
+
+            {/* Sights */}
+            <div className="mt-3 mb-1 flex items-center justify-between">
+              <span className="label text-muted-foreground">Sights</span>
+              <button
+                type="button"
+                onClick={() =>
+                  setSightCats((prev) =>
+                    prev.size === POI_CATS.length
+                      ? new Set()
+                      : new Set(POI_CATS.map((c) => c.type)),
+                  )
+                }
+                className="focus-ring rounded text-[11px] font-medium text-volt-tint hover:underline"
+              >
+                {sightCats.size === POI_CATS.length ? "None" : "All"}
+              </button>
+            </div>
+            <div className="flex flex-col gap-0.5">
+              {POI_CATS.map(({ type, label, Icon }) => {
+                const on = sightCats.has(type);
+                return (
+                  <button
+                    key={type}
+                    type="button"
+                    onClick={() =>
+                      setSightCats((prev) => {
+                        const next = new Set(prev);
+                        if (next.has(type)) next.delete(type);
+                        else next.add(type);
+                        return next;
+                      })
+                    }
+                    aria-pressed={on}
+                    className={cn(
+                      "focus-ring flex items-center gap-2.5 rounded-lg px-2 py-1.5 transition-colors",
+                      on
+                        ? "bg-white/[0.06] text-foreground"
+                        : "text-muted-foreground hover:bg-white/[0.03]",
+                    )}
+                  >
+                    <Icon size={16} stroke={1.9} className={on ? "text-volt-tint" : ""} />
+                    <span className="flex-1 text-left">{label}</span>
+                    {on && <IconCheck size={14} className="text-volt-tint" />}
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Fuel prices */}
+            <div className="mt-3 mb-1">
+              <span className="label text-muted-foreground">Fuel</span>
+            </div>
+            <button
+              type="button"
+              onClick={() => setFuelOn((f) => !f)}
+              aria-pressed={fuelOn}
+              className={cn(
+                "focus-ring flex w-full items-center gap-2.5 rounded-lg px-2 py-1.5 transition-colors",
+                fuelOn
+                  ? "bg-white/[0.06] text-foreground"
+                  : "text-muted-foreground hover:bg-white/[0.03]",
+              )}
+            >
+              <IconGasStation
+                size={16}
+                stroke={1.9}
+                className={fuelOn ? "text-volt-tint" : ""}
+              />
+              <span className="flex-1 text-left">Diesel prices</span>
+              {fuelOn && <IconCheck size={14} className="text-volt-tint" />}
+            </button>
+            {fuelOn && (
+              <p className="mt-1.5 px-2 text-[11px] leading-snug text-muted-foreground">
+                {fuelZoomedOut
+                  ? "Zoom in to load prices."
+                  : "Cheapest nearby shown bright. Live where available (DE/FR/AT/LU)."}
+              </p>
+            )}
+          </div>
         )}
       </div>
+
+      {/* Fuel grade legend, bottom-left, only when live */}
+      {fuelOn && !fuelZoomedOut && (
+        <div className="glass absolute bottom-3 left-3 z-10 flex items-center gap-2 rounded-full px-3 py-1.5 text-[11px] text-muted-foreground">
+          <span className="size-2.5 rounded-full bg-volt" />
+          <span>cheaper</span>
+          <span className="ml-1 size-2.5 rounded-full bg-white/20" />
+          <span>dearer</span>
+        </div>
+      )}
     </div>
   );
 });
