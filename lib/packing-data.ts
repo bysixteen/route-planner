@@ -12,6 +12,8 @@ export interface PackingItem {
   loc: string;
   status: PackingStatus;
   note?: string;
+  /** A "buy it here" link for purchasable items (vignettes, kit). */
+  url?: string;
 }
 
 export const PACKING_ITEMS: PackingItem[] = [
@@ -28,10 +30,10 @@ export const PACKING_ITEMS: PackingItem[] = [
   { cat: "Documents & money", name: "LeShuttle booking", loc: "Seat storage", status: "have" },
   { cat: "Documents & money", name: "Credit/debit cards", loc: "Seat storage", status: "have" },
   { cat: "Documents & money", name: "Cash (Euros + some GBP)", loc: "Seat storage", status: "need", note: "Get €200-300" },
-  { cat: "Documents & money", name: "Austria digital vignette", loc: "Digital", status: "buy", note: "asfinag.at 10-day (~€12) — valid immediately" },
-  { cat: "Documents & money", name: "Hungary e-vignette (D1)", loc: "Digital", status: "buy", note: "nemzetiutdij.hu 10-day (~€14)" },
-  { cat: "Documents & money", name: "Germany Umweltplakette", loc: "Windscreen", status: "buy", note: "Pick up at a DEKRA/TÜV en route — needed for Nuremberg" },
-  { cat: "Documents & money", name: "France Crit'Air sticker", loc: "Windscreen", status: "have", note: "Paper sticker already sorted" },
+  { cat: "Documents & money", name: "Austria digital vignette", loc: "Digital", status: "buy", note: "10-day (~€12) — valid immediately", url: "https://shop.asfinag.at/en/toll-products/digital-vignette/?type=car" },
+  { cat: "Documents & money", name: "Hungary e-vignette (D1)", loc: "Digital", status: "buy", note: "10-day (~€14) — pick your start date", url: "https://nemzetiutdij.hu/en/e-vignette/e-vignette-purchase" },
+  { cat: "Documents & money", name: "Germany Umweltplakette", loc: "Windscreen", status: "buy", note: "Pick up at a DEKRA/TÜV en route — needed for Nuremberg", url: "https://www.tuv.com/germany/en/environmental-badge.html" },
+  { cat: "Documents & money", name: "France Crit'Air sticker", loc: "Windscreen", status: "have", note: "Paper sticker already sorted", url: "https://www.certificat-air.gouv.fr/en/" },
 
   // Van equipment
   { cat: "Van equipment", name: "EHU cable (25m)", loc: "Rear floor cupboard", status: "have" },

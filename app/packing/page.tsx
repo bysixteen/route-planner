@@ -1,12 +1,13 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   Check,
   ChevronDown,
   ChevronLeft,
   ChevronRight,
+  ExternalLink,
   MapPin,
   Plus,
   RotateCcw,
@@ -69,6 +70,12 @@ function useLocalState<T>(key: string, initial: T) {
 }
 
 export default function PackingPage() {
+  const router = useRouter();
+  const goBack = () => {
+    if (typeof window !== "undefined" && window.history.length > 1)
+      router.back();
+    else router.push("/");
+  };
   const [checked, setChecked] = useLocalState<Record<string, boolean>>(
     KEY_CHECKED,
     {},
@@ -166,13 +173,14 @@ export default function PackingPage() {
       <div className="mx-auto max-w-3xl px-4 pb-24 pt-[calc(1rem+env(safe-area-inset-top))] sm:px-6">
         {/* Header */}
         <div className="mb-4 flex items-center gap-3">
-          <Link
-            href="/"
-            aria-label="Back to trips"
+          <button
+            type="button"
+            onClick={goBack}
+            aria-label="Back"
             className="focus-ring flex size-10 shrink-0 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-white/[0.06] hover:text-foreground"
           >
             <ChevronLeft className="size-5" />
-          </Link>
+          </button>
           <div className="min-w-0 flex-1">
             <p className="label text-muted-foreground">Packing</p>
             <h1 className="font-display truncate text-xl font-bold tracking-tight">
@@ -367,6 +375,18 @@ export default function PackingPage() {
                               )}
                             </span>
                           </button>
+                          {item.url && (
+                            <a
+                              href={item.url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              onClick={(e) => e.stopPropagation()}
+                              aria-label={`Buy ${item.name}`}
+                              className="focus-ring flex shrink-0 items-center gap-1 self-center rounded-md px-2 text-xs font-medium text-volt-bright transition-colors hover:text-volt-tint"
+                            >
+                              Buy <ExternalLink className="size-3.5" />
+                            </a>
+                          )}
                           <button
                             type="button"
                             onClick={() => deleteItem(item)}
