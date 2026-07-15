@@ -137,8 +137,13 @@ export default function HomePage() {
           >
             Route Planner
           </Link>
-          <nav className="flex items-center gap-3">
+          <nav className="flex items-center gap-2 sm:gap-3">
             <PwaInstall />
+            <Link href="/packing">
+              <Button size="sm" variant="outline">
+                Packing
+              </Button>
+            </Link>
             <Link href="/plan">
               <Button size="sm">Plan a Trip</Button>
             </Link>

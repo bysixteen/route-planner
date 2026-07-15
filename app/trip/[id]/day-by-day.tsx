@@ -1,7 +1,8 @@
 "use client";
 
 import { useMemo } from "react";
-import { Clock, Moon } from "lucide-react";
+import Link from "next/link";
+import { Clock, Moon, Package } from "lucide-react";
 
 import { formatDistance, formatDuration } from "@/lib/mapbox/directions";
 import type { RouteResult } from "@/lib/mapbox/directions";
@@ -337,7 +338,14 @@ export function DayByDayView({
             )}
           </p>
 
-          <p className="mt-2 text-xs text-muted-foreground print:hidden">
+          <Link
+            href="/packing"
+            className="focus-ring mt-3 inline-flex items-center gap-1.5 rounded-lg bg-white/[0.06] px-3 py-1.5 text-sm font-medium text-foreground transition-colors hover:bg-white/[0.1] print:hidden"
+          >
+            <Package className="size-4" /> Packing list
+          </Link>
+
+          <p className="mt-3 text-xs text-muted-foreground print:hidden">
             Drive times:{" "}
             <span className="text-health-good">under 4 h</span> comfortable ·{" "}
             <span className="text-health-warn">4–5 h</span> long ·{" "}
