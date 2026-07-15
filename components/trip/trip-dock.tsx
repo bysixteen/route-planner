@@ -14,7 +14,7 @@ import {
 
 import { cn } from "@/lib/utils";
 
-export type TripView = "cockpit" | "itinerary";
+export type TripView = "cockpit" | "itinerary" | "packing";
 
 interface TripDockProps {
   view: TripView;
@@ -28,6 +28,7 @@ interface TripDockProps {
 const SEGMENTS: { key: TripView; label: string; icon: typeof List }[] = [
   { key: "cockpit", label: "Route", icon: List },
   { key: "itinerary", label: "Days", icon: CalendarDays },
+  { key: "packing", label: "Pack", icon: Package },
 ];
 
 /**
@@ -124,14 +125,6 @@ export function TripDock({
               role="menu"
               className="glass absolute bottom-[calc(100%+0.5rem)] right-0 flex min-w-[10rem] flex-col rounded-2xl border border-white/10 p-1 shadow-lg"
             >
-              <Link
-                role="menuitem"
-                href="/packing"
-                onClick={() => setMenuOpen(false)}
-                className="focus-ring flex items-center gap-2 rounded-xl px-3 py-2.5 text-left text-sm text-foreground transition-colors hover:bg-white/[0.06]"
-              >
-                <Package className="size-4" /> Packing list
-              </Link>
               <button
                 role="menuitem"
                 type="button"

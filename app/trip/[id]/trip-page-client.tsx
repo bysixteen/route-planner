@@ -16,6 +16,7 @@ import { DayByDayView } from "./day-by-day";
 import { TripCockpit } from "@/components/trip/trip-cockpit";
 import { TripDock, type TripView } from "@/components/trip/trip-dock";
 import { StopDetailPanel } from "@/components/trip/stop-detail-panel";
+import { PackingList } from "@/components/trip/packing-list";
 import { BottomSheet, type Detent } from "@/components/trip/bottom-sheet";
 import { NavigateButton } from "@/components/trip/navigate-button";
 import { CopyButton } from "@/components/trip/copy-button";
@@ -321,7 +322,7 @@ export default function TripPageClient() {
         <div
           className={cn(
             "absolute inset-0 print:hidden",
-            view !== "itinerary" ? "visible" : "invisible",
+            view === "cockpit" ? "visible" : "invisible",
           )}
         >
           <TripMap
@@ -339,7 +340,7 @@ export default function TripPageClient() {
 
         {/* Ambient countdown chip — canvas states only, clear of the
             top-centre style switcher. Volt only when departure is near. */}
-        {view !== "itinerary" && countdownLabel() && (
+        {view === "cockpit" && countdownLabel() && (
           <div
             className={cn(
               "glass absolute left-3 top-[calc(0.75rem+env(safe-area-inset-top))] z-20 rounded-full border border-white/10 px-3 py-1.5 text-xs font-medium tabular-nums print:hidden",
@@ -372,7 +373,7 @@ export default function TripPageClient() {
         )}
 
         {/* Desktop: stop detail right rail (component is hidden md:flex) */}
-        {selectedLeg && (
+        {view === "cockpit" && selectedLeg && (
           <StopDetailPanel
             leg={selectedLeg}
             onClose={() => setSelectedLeg(null)}
@@ -380,7 +381,7 @@ export default function TripPageClient() {
         )}
 
         {/* Mobile: ONE content sheet — stop list ⇄ stop detail, three detents */}
-        {view !== "itinerary" && (
+        {view === "cockpit" && (
           <BottomSheet
             detent={detent}
             onDetentChange={setDetent}
@@ -502,6 +503,14 @@ export default function TripPageClient() {
             onShowOnMap={showStopOnMap}
           />
         </div>
+
+        {/* Pack overlay — same idiom as the itinerary; map stays mounted
+            underneath so returning is instant (no Mapbox re-init). */}
+        {view === "packing" && (
+          <div className="scroll-fade absolute inset-0 z-30 overflow-y-auto bg-background print:hidden">
+            <PackingList onBack={() => setView("cockpit")} />
+          </div>
+        )}
 
         {/* The one piece of persistent chrome */}
         <TripDock
