@@ -122,7 +122,7 @@ export function TripCockpit({
 
         {/* Route leg filter */}
         {eventStopIndex >= 0 && (
-          <div className="mt-3 flex items-center gap-1 rounded-full bg-white/[0.06] p-0.5 text-[11px]">
+          <div className="mt-3 flex items-center gap-1 rounded-full bg-white/[0.06] p-0.5 text-[13px]">
             {(["both", "outbound", "return"] as const).map((l) => (
               <button
                 key={l}
@@ -151,10 +151,10 @@ export function TripCockpit({
         )}
       >
         <div className="flex items-center justify-between">
-          <span className="coordinate text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+          <span className="coordinate text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
             Stops
           </span>
-          <span className="font-display text-[10px] tabular-nums text-muted-foreground">
+          <span className="font-display text-[11px] tabular-nums text-muted-foreground">
             {bookingHealth.confirmed}/{bookingHealth.total} booked
           </span>
         </div>
@@ -193,7 +193,7 @@ function Stat({
           {value}
         </div>
       )}
-      <div className="coordinate mt-2 text-[9px] uppercase tracking-[0.12em] text-muted-foreground/70">
+      <div className="coordinate mt-2 text-[10px] uppercase tracking-[0.12em] text-muted-foreground/70">
         {label}
       </div>
     </div>
@@ -222,22 +222,22 @@ function StopRow({
       data-selected={selected ? "true" : undefined}
       aria-pressed={selected}
       className={cn(
-        "focus-ring flex w-full items-center gap-3 rounded-xl px-2.5 py-2.5 text-left transition-colors",
+        "focus-ring flex min-h-[44px] w-full items-center gap-3 rounded-xl px-2.5 py-2.5 text-left transition-colors",
         selected ? "bg-white/[0.07]" : "hover:bg-white/[0.035]",
       )}
     >
       <span className="min-w-0 flex-1">
         <span className="flex items-center gap-1.5">
-          <span className="font-display truncate text-sm font-semibold">
+          <span className="font-display truncate text-[15px] font-semibold">
             {countryFlag(stop.country)} {stop.name}
           </span>
           {isNext && (
-            <span className="rounded bg-highlight px-1 py-px text-[8px] font-bold uppercase tracking-wide text-highlight-foreground">
+            <span className="rounded bg-highlight px-1 py-px text-[10px] font-bold uppercase tracking-wide text-highlight-foreground">
               Next
             </span>
           )}
         </span>
-        <span className="mt-0.5 block text-[11px] text-muted-foreground">
+        <span className="mt-0.5 block text-[13px] text-muted-foreground">
           {booking === "confirmed" && (
             <span className="text-health-good">Booked</span>
           )}

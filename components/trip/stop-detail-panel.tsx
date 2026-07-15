@@ -54,11 +54,46 @@ function detectFacilities(notes: string | null, amenities?: string[] | null): st
   return chips;
 }
 
+/** Detect campsite amenity cues (laundry, shop, bar, playground, etc.). */
+function detectCampsiteAmenities(notes: string | null, amenities?: string[] | null): string[] {
+  const text = `${notes ?? ""} ${(amenities ?? []).join(" ")}`.toLowerCase();
+  const chips: string[] = [];
+  if (/laundry|washing machine|laundr/.test(text)) chips.push("Laundry");
+  if (/tumble dryer|\bdryer\b/.test(text)) chips.push("Tumble dryer");
+  if (/dishwasher/.test(text)) chips.push("Dishwasher");
+  if (/\bkitchen\b|cooking facilit/.test(text)) chips.push("Kitchen");
+  if (/\bshop\b|supermarket|grocery|minimarket/.test(text)) chips.push("Shop");
+  if (/\bbar\b|\brestaurant\b|café|cafe|snack bar/.test(text)) chips.push("Bar / restaurant");
+  if (/\bbbq\b|barbecue|barbeque/.test(text)) chips.push("BBQ area");
+  if (/playground|play area|children.s facilit/.test(text)) chips.push("Playground");
+  if (/disabled|accessibility|wheelchair/.test(text)) chips.push("Accessible");
+  return chips;
+}
+
+/** Detect sports & leisure facilities (pool, tennis, gym, spa, etc.). */
+function detectSports(notes: string | null, amenities?: string[] | null): string[] {
+  const text = `${notes ?? ""} ${(amenities ?? []).join(" ")}`.toLowerCase();
+  const chips: string[] = [];
+  if (/swimming pool|\bpool\b|piscine/.test(text)) chips.push("Swimming pool");
+  if (/heated pool|indoor pool/.test(text)) chips.push("Heated pool");
+  if (/water slide|waterslide/.test(text)) chips.push("Water slides");
+  if (/\btennis\b/.test(text)) chips.push("Tennis");
+  if (/\bgolf\b/.test(text)) chips.push("Golf");
+  if (/volleyball|sports court|basketball/.test(text)) chips.push("Sports court");
+  if (/cycling|bike hire|bicycle rental/.test(text)) chips.push("Bike hire");
+  if (/\bgym\b|fitness|workout room/.test(text)) chips.push("Gym");
+  if (/\bspa\b|\bsauna\b|jacuzzi|hot tub/.test(text)) chips.push("Spa / sauna");
+  if (/minigolf|mini-golf/.test(text)) chips.push("Mini-golf");
+  return chips;
+}
+
 /** Slide-in stop detail — right rail on desktop; body-only inside the mobile sheet. */
 export function StopDetailPanel({ leg, onClose, embedded }: StopDetailPanelProps) {
   const { stop, prevStop, minutes, distance } = leg;
   const booking = getBookingStatus(stop);
   const facilities = detectFacilities(stop.notes, stop.amenities);
+  const campsiteAmenities = stop.type === "campsite" ? detectCampsiteAmenities(stop.notes, stop.amenities) : [];
+  const sports = stop.type === "campsite" ? detectSports(stop.notes, stop.amenities) : [];
   const extra = getBookingExtraForStop(stop);
   const hasDrive = minutes > 0;
 
@@ -139,7 +174,7 @@ export function StopDetailPanel({ leg, onClose, embedded }: StopDetailPanelProps
 
         {/* Address & satnav — address primary, coordinates as fallback */}
         <div>
-          <p className="coordinate mb-1.5 text-[10px] uppercase tracking-[0.14em] text-muted-foreground/70">
+          <p className="coordinate mb-1.5 text-[11px] uppercase tracking-[0.14em] text-muted-foreground/70">
             Address &amp; satnav
           </p>
           {address ? (
@@ -151,7 +186,7 @@ export function StopDetailPanel({ leg, onClose, embedded }: StopDetailPanelProps
                   label="Copy address for satnav"
                   title="Copy address for satnav"
                 />
-                <span className="coordinate text-[11px] text-muted-foreground">
+                <span className="coordinate text-[13px] text-muted-foreground">
                   {formatCoordinate(stop.lat, stop.lng)}
                 </span>
                 <CopyButton
@@ -182,7 +217,7 @@ export function StopDetailPanel({ leg, onClose, embedded }: StopDetailPanelProps
           (extra?.refs?.length ?? 0) > 0 ||
           extra?.siteInfoUrl) && (
           <div>
-            <p className="coordinate mb-1.5 text-[10px] uppercase tracking-[0.14em] text-muted-foreground/70">
+            <p className="coordinate mb-1.5 text-[11px] uppercase tracking-[0.14em] text-muted-foreground/70">
               Booking
             </p>
             <div className="flex flex-wrap items-center gap-2">
@@ -190,7 +225,7 @@ export function StopDetailPanel({ leg, onClose, embedded }: StopDetailPanelProps
                 <CopyButton
                   value={stop.booking_reference}
                   title="Copy booking reference"
-                  className="border-health-good/30 bg-health-good/10 px-2 py-1 font-mono text-[11px] text-health-good"
+                  className="border-health-good/30 bg-health-good/10 px-2 py-1 font-mono text-[13px] text-health-good"
                 />
               )}
               {extra?.refs?.map((r) => (
@@ -199,7 +234,7 @@ export function StopDetailPanel({ leg, onClose, embedded }: StopDetailPanelProps
                   value={r.value}
                   label={`${r.label} · ${r.value}`}
                   title={`Copy ${r.label} reference`}
-                  className="px-2 py-1 font-mono text-[11px]"
+                  className="px-2 py-1 font-mono text-[13px]"
                 />
               ))}
               {extra?.siteInfoUrl && (
@@ -207,7 +242,7 @@ export function StopDetailPanel({ leg, onClose, embedded }: StopDetailPanelProps
                   href={extra.siteInfoUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="focus-ring inline-flex items-center gap-1 rounded text-[11px] font-medium text-volt-bright hover:underline"
+                  className="focus-ring inline-flex items-center gap-1 rounded text-[13px] font-medium text-volt-bright hover:underline"
                 >
                   {extra.siteInfoLabel ?? "Info"} <ExternalLink className="size-3" />
                 </a>
@@ -222,7 +257,7 @@ export function StopDetailPanel({ leg, onClose, embedded }: StopDetailPanelProps
                   href={stop.booking_url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="focus-ring inline-flex items-center gap-1 rounded text-[11px] font-medium text-volt-bright hover:underline"
+                  className="focus-ring inline-flex items-center gap-1 rounded text-[13px] font-medium text-volt-bright hover:underline"
                 >
                   Website <ExternalLink className="size-3" />
                 </a>
@@ -237,7 +272,7 @@ export function StopDetailPanel({ leg, onClose, embedded }: StopDetailPanelProps
         {/* Check-in (from the confirmation email) */}
         {extra && (extra.checkIn || extra.checkOut || extra.arrivalNote) && (
           <div>
-            <p className="coordinate mb-1.5 text-[10px] uppercase tracking-[0.14em] text-muted-foreground/70">
+            <p className="coordinate mb-1.5 text-[11px] uppercase tracking-[0.14em] text-muted-foreground/70">
               Check-in
             </p>
             {(extra.checkIn || extra.checkOut) && (
@@ -257,7 +292,7 @@ export function StopDetailPanel({ leg, onClose, embedded }: StopDetailPanelProps
               </div>
             )}
             {extra.arrivalNote && (
-              <p className="mt-1.5 text-[11px] leading-relaxed text-muted-foreground">
+              <p className="mt-1.5 text-[13px] leading-relaxed text-muted-foreground">
                 {extra.arrivalNote}
               </p>
             )}
@@ -267,14 +302,14 @@ export function StopDetailPanel({ leg, onClose, embedded }: StopDetailPanelProps
         {/* Reminders / action items */}
         {extra?.reminders && extra.reminders.length > 0 && (
           <div>
-            <p className="coordinate mb-1.5 text-[10px] uppercase tracking-[0.14em] text-muted-foreground/70">
+            <p className="coordinate mb-1.5 text-[11px] uppercase tracking-[0.14em] text-muted-foreground/70">
               Reminders
             </p>
             <ul className="space-y-1.5">
               {extra.reminders.map((r, i) => (
                 <li
                   key={i}
-                  className="flex gap-2 text-[11px] leading-relaxed text-muted-foreground"
+                  className="flex gap-2 text-[13px] leading-relaxed text-muted-foreground"
                 >
                   <span className="mt-1 size-1.5 shrink-0 rounded-full bg-health-warn" />
                   <span>{r}</span>
@@ -287,7 +322,7 @@ export function StopDetailPanel({ leg, onClose, embedded }: StopDetailPanelProps
         {/* Awning */}
         {extra?.awning && (
           <div>
-            <p className="coordinate mb-1.5 text-[10px] uppercase tracking-[0.14em] text-muted-foreground/70">
+            <p className="coordinate mb-1.5 text-[11px] uppercase tracking-[0.14em] text-muted-foreground/70">
               Awning
             </p>
             <div className="flex items-center gap-2">
@@ -309,7 +344,7 @@ export function StopDetailPanel({ leg, onClose, embedded }: StopDetailPanelProps
               </span>
             </div>
             {extra.awningNote && (
-              <p className="mt-1.5 text-[11px] leading-relaxed text-muted-foreground">
+              <p className="mt-1.5 text-[13px] leading-relaxed text-muted-foreground">
                 {extra.awningNote}
               </p>
             )}
@@ -318,7 +353,7 @@ export function StopDetailPanel({ leg, onClose, embedded }: StopDetailPanelProps
 
         {/* Pitch & facilities */}
         <div>
-          <p className="coordinate mb-1.5 text-[10px] uppercase tracking-[0.14em] text-muted-foreground/70">
+          <p className="coordinate mb-1.5 text-[11px] uppercase tracking-[0.14em] text-muted-foreground/70">
             Pitch &amp; facilities
           </p>
           {facilities.length > 0 ? (
@@ -326,24 +361,62 @@ export function StopDetailPanel({ leg, onClose, embedded }: StopDetailPanelProps
               {facilities.map((f) => (
                 <span
                   key={f}
-                  className="rounded-full bg-white/[0.06] px-2.5 py-1 text-[11px] text-foreground"
+                  className="rounded-full bg-white/[0.06] px-2.5 py-1 text-[13px] text-foreground"
                 >
                   {f}
                 </span>
               ))}
             </div>
           ) : (
-            <p className="text-[11px] text-muted-foreground/70">
+            <p className="text-[13px] text-muted-foreground/70">
               No pitch details noted yet — check on arrival (surface, levelling,
               hookup).
             </p>
           )}
         </div>
 
+        {/* Campsite facilities (laundry, shop, bar, etc.) */}
+        {campsiteAmenities.length > 0 && (
+          <div>
+            <p className="coordinate mb-1.5 text-[11px] uppercase tracking-[0.14em] text-muted-foreground/70">
+              Campsite facilities
+            </p>
+            <div className="flex flex-wrap gap-1.5">
+              {campsiteAmenities.map((f) => (
+                <span
+                  key={f}
+                  className="rounded-full bg-white/[0.06] px-2.5 py-1 text-[13px] text-foreground"
+                >
+                  {f}
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Sports & leisure */}
+        {sports.length > 0 && (
+          <div>
+            <p className="coordinate mb-1.5 text-[11px] uppercase tracking-[0.14em] text-muted-foreground/70">
+              Sports &amp; leisure
+            </p>
+            <div className="flex flex-wrap gap-1.5">
+              {sports.map((s) => (
+                <span
+                  key={s}
+                  className="rounded-full bg-white/[0.06] px-2.5 py-1 text-[13px] text-foreground"
+                >
+                  {s}
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
+
         {/* Notes */}
         {stop.notes && (
           <div>
-            <p className="coordinate mb-1.5 text-[10px] uppercase tracking-[0.14em] text-muted-foreground/70">
+            <p className="coordinate mb-1.5 text-[11px] uppercase tracking-[0.14em] text-muted-foreground/70">
               Notes
             </p>
             <p className="whitespace-pre-line text-xs leading-relaxed text-muted-foreground">

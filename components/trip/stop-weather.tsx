@@ -66,7 +66,7 @@ export function StopWeather({
   if (loading) {
     return (
       <div>
-        <p className="coordinate mb-1.5 text-[10px] uppercase tracking-[0.14em] text-muted-foreground/70">
+        <p className="coordinate mb-1.5 text-[11px] uppercase tracking-[0.14em] text-muted-foreground/70">
           Weather at arrival
         </p>
         <div className="h-14 animate-pulse rounded-lg bg-white/[0.04]" />
@@ -81,7 +81,7 @@ export function StopWeather({
 
   return (
     <div>
-      <p className="coordinate mb-1.5 text-[10px] uppercase tracking-[0.14em] text-muted-foreground/70">
+      <p className="coordinate mb-1.5 text-[11px] uppercase tracking-[0.14em] text-muted-foreground/70">
         Weather at arrival
       </p>
       <div className="flex items-center gap-3 rounded-lg bg-white/[0.04] p-3">
@@ -114,7 +114,7 @@ export function StopWeather({
         </div>
       </div>
       {weather.typical && (
-        <p className="mt-1.5 text-[10px] text-muted-foreground/70">
+        <p className="mt-1.5 text-[11px] text-muted-foreground/70">
           Typical late July · updates nearer the time
         </p>
       )}
