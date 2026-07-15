@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   Check,
   ChevronDown,
@@ -93,9 +93,12 @@ export function PackingList({ onBack }: { onBack: () => void }) {
   const [custom, setCustom] = useLocalState<Row[]>(KEY_CUSTOM, []);
   const [filter, setFilter] = useState<Filter>("all");
   const [search, setSearch] = useState("");
+  const [groupBy, setGroupBy] = useState<"category" | "location">("category");
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
   const [addingCat, setAddingCat] = useState<string | null>(null);
   const [newName, setNewName] = useState("");
+  const [lastDeleted, setLastDeleted] = useState<Row | null>(null);
+  const undoTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const rows = useMemo<Row[]>(() => {
     const builtins: Row[] = PACKING_ITEMS.map((i) => ({
@@ -106,15 +109,33 @@ export function PackingList({ onBack }: { onBack: () => void }) {
     return [...builtins.filter((r) => !deleted[r.id]), ...custom];
   }, [deleted, custom]);
 
+  const groupKeyOf = (r: Row) => (groupBy === "category" ? r.cat : r.loc);
+
   const toggleItem = (id: string) =>
     setChecked((c) => ({ ...c, [id]: !c[id] }));
-  const toggleCat = (cat: string) =>
-    setCollapsed((c) => ({ ...c, [cat]: !c[cat] }));
+  const toggleCat = (grp: string) =>
+    setCollapsed((c) => ({ ...c, [grp]: !c[grp] }));
   const deleteItem = (row: Row) => {
     if (row.builtin) setDeleted((d) => ({ ...d, [row.id]: true }));
     else setCustom((cs) => cs.filter((c) => c.id !== row.id));
+    setLastDeleted(row);
+    if (undoTimer.current) clearTimeout(undoTimer.current);
+    undoTimer.current = setTimeout(() => setLastDeleted(null), 6000);
   };
-  const addItem = (cat: string) => {
+  const undoDelete = () => {
+    const row = lastDeleted;
+    if (!row) return;
+    if (row.builtin)
+      setDeleted((d) => {
+        const n = { ...d };
+        delete n[row.id];
+        return n;
+      });
+    else setCustom((cs) => [...cs, row]);
+    setLastDeleted(null);
+    if (undoTimer.current) clearTimeout(undoTimer.current);
+  };
+  const addItem = (grp: string) => {
     const name = newName.trim();
     if (!name) return;
     setCustom((cs) => [
@@ -124,9 +145,9 @@ export function PackingList({ onBack }: { onBack: () => void }) {
           typeof crypto !== "undefined" && crypto.randomUUID
             ? crypto.randomUUID()
             : `c:${name}:${cs.length}`,
-        cat,
+        cat: groupBy === "category" ? grp : "Miscellaneous",
+        loc: groupBy === "location" ? grp : "Added",
         name,
-        loc: "Added",
         status: "need",
         builtin: false,
       },
@@ -166,10 +187,14 @@ export function PackingList({ onBack }: { onBack: () => void }) {
     });
   }, [rows, search, filter, checked]);
 
-  const categories = useMemo(() => {
-    const present = new Set(rows.map((r) => r.cat));
-    return PACKING_CATEGORIES.filter((c) => present.has(c));
-  }, [rows]);
+  const groups = useMemo(() => {
+    const present = [
+      ...new Set(rows.map((r) => (groupBy === "category" ? r.cat : r.loc))),
+    ];
+    return groupBy === "category"
+      ? PACKING_CATEGORIES.filter((c) => present.includes(c))
+      : present.sort((a, b) => a.localeCompare(b));
+  }, [rows, groupBy]);
 
   const pct = counts.total ? Math.round((counts.packed / counts.total) * 100) : 0;
 
@@ -287,22 +312,45 @@ export function PackingList({ onBack }: { onBack: () => void }) {
         </div>
       </div>
 
-      {/* Categories */}
+      {/* Group-by toggle — load the van cupboard-by-cupboard, or by category */}
+      <div className="mb-3 flex items-center gap-2">
+        <span className="label text-muted-foreground">Group by</span>
+        <div className="surface-2 flex gap-1 rounded-lg p-0.5 text-xs">
+          {(["category", "location"] as const).map((g) => (
+            <button
+              key={g}
+              type="button"
+              onClick={() => setGroupBy(g)}
+              aria-pressed={groupBy === g}
+              className={cn(
+                "focus-ring rounded-md px-2.5 py-1.5 font-medium capitalize transition-colors",
+                groupBy === g
+                  ? "bg-highlight/20 text-volt-tint"
+                  : "text-muted-foreground hover:text-foreground",
+              )}
+            >
+              {g}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Groups */}
       <div className="space-y-3">
-        {categories.map((cat) => {
-          const items = filtered.filter((i) => i.cat === cat);
-          const catRows = rows.filter((i) => i.cat === cat);
-          const catPacked = catRows.filter((i) => checked[i.id]).length;
-          const isCollapsed = collapsed[cat];
-          if (items.length === 0 && addingCat !== cat) return null;
+        {groups.map((grp) => {
+          const items = filtered.filter((i) => groupKeyOf(i) === grp);
+          const grpRows = rows.filter((i) => groupKeyOf(i) === grp);
+          const grpPacked = grpRows.filter((i) => checked[i.id]).length;
+          const isCollapsed = collapsed[grp];
+          if (items.length === 0 && addingCat !== grp) return null;
           return (
             <div
-              key={cat}
+              key={grp}
               className="glass overflow-hidden rounded-2xl border border-white/10"
             >
               <button
                 type="button"
-                onClick={() => toggleCat(cat)}
+                onClick={() => toggleCat(grp)}
                 aria-expanded={!isCollapsed}
                 className="focus-ring flex w-full items-center gap-3 p-4 text-left transition-colors hover:bg-white/[0.03]"
               >
@@ -312,10 +360,10 @@ export function PackingList({ onBack }: { onBack: () => void }) {
                   <ChevronDown className="size-5 shrink-0 text-muted-foreground" />
                 )}
                 <h2 className="font-display min-w-0 flex-1 truncate font-semibold">
-                  {cat}
+                  {grp}
                 </h2>
                 <span className="font-display shrink-0 text-[13px] tabular-nums text-muted-foreground">
-                  {catPacked}/{catRows.length}
+                  {grpPacked}/{grpRows.length}
                 </span>
               </button>
               {!isCollapsed && (
@@ -402,11 +450,11 @@ export function PackingList({ onBack }: { onBack: () => void }) {
                   })}
 
                   <li className="p-2">
-                    {addingCat === cat ? (
+                    {addingCat === grp ? (
                       <form
                         onSubmit={(e) => {
                           e.preventDefault();
-                          addItem(cat);
+                          addItem(grp);
                         }}
                         className="flex items-center gap-2"
                       >
@@ -415,7 +463,7 @@ export function PackingList({ onBack }: { onBack: () => void }) {
                           value={newName}
                           autoFocus
                           onChange={(e) => setNewName(e.target.value)}
-                          aria-label={`New item for ${cat}`}
+                          aria-label={`New item for ${grp}`}
                           placeholder="Add an item…"
                           className="focus-ring surface-1 min-w-0 flex-1 rounded-lg border border-white/10 px-3 py-2 text-sm placeholder:text-muted-foreground"
                         />
@@ -441,7 +489,7 @@ export function PackingList({ onBack }: { onBack: () => void }) {
                       <button
                         type="button"
                         onClick={() => {
-                          setAddingCat(cat);
+                          setAddingCat(grp);
                           setNewName("");
                         }}
                         className="focus-ring flex items-center gap-1.5 rounded-lg px-2 py-1.5 text-sm text-muted-foreground transition-colors hover:text-foreground"
@@ -460,6 +508,25 @@ export function PackingList({ onBack }: { onBack: () => void }) {
       <p className="mt-6 text-center text-xs text-muted-foreground">
         {counts.total} items · saved on this device · works offline
       </p>
+
+      {/* Undo toast after a delete */}
+      {lastDeleted && (
+        <div className="fixed inset-x-0 bottom-[calc(5rem+env(safe-area-inset-bottom))] z-40 flex justify-center px-4 print:hidden">
+          <div className="glass flex items-center gap-3 rounded-full border border-white/10 px-4 py-2 text-sm shadow-lg">
+            <span className="truncate text-muted-foreground">
+              Removed{" "}
+              <span className="text-foreground">{lastDeleted.name}</span>
+            </span>
+            <button
+              type="button"
+              onClick={undoDelete}
+              className="focus-ring rounded-md font-semibold text-volt-bright transition-colors hover:text-volt-tint"
+            >
+              Undo
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

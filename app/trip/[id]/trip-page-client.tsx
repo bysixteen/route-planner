@@ -501,6 +501,7 @@ export default function TripPageClient() {
             totalStopCost={totalStopCost}
             bookingHealth={bookingHealth}
             onShowOnMap={showStopOnMap}
+            onOpenPacking={() => setView("packing")}
           />
         </div>
 

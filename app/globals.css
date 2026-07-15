@@ -11,6 +11,7 @@
   /* Brand extras — Tesla cockpit */
   --color-highlight: var(--highlight);
   --color-highlight-foreground: var(--highlight-foreground);
+  --color-volt: var(--volt);
   --color-volt-bright: var(--volt-bright);
   --color-volt-tint: var(--volt-tint);
   --color-sage: var(--sage);

@@ -48,6 +48,8 @@ export interface DayByDayProps {
   bookingHealth: { confirmed: number; total: number };
   /** Open a stop on the map (switches out of the itinerary overlay). */
   onShowOnMap?: (stopIndex: number) => void;
+  /** Open the packing list (documents/vignettes are checked off there). */
+  onOpenPacking?: () => void;
 }
 
 // ---- Helpers ---------------------------------------------------------------
@@ -188,6 +190,7 @@ export function DayByDayView({
   totalStopCost,
   bookingHealth,
   onShowOnMap,
+  onOpenPacking,
 }: DayByDayProps) {
   const routeLoading = route === null;
   const showOnMap = (stop: SupabaseStop) =>
@@ -462,9 +465,20 @@ export function DayByDayView({
           <p className="label mb-1 text-muted-foreground">
             Documents
           </p>
-          <h2 className="font-display mb-4 text-xl font-bold">
-            Van Documents &amp; Vignettes
-          </h2>
+          <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
+            <h2 className="font-display text-xl font-bold">
+              Van Documents &amp; Vignettes
+            </h2>
+            {onOpenPacking && (
+              <button
+                type="button"
+                onClick={onOpenPacking}
+                className="focus-ring inline-flex items-center gap-1.5 rounded-lg surface-2 px-3 py-1.5 text-sm font-medium text-foreground transition-colors hover:text-volt-tint print:hidden"
+              >
+                Tick off in Pack →
+              </button>
+            )}
+          </div>
 
           {/* Mobile stacked cards */}
           <div className="space-y-3 sm:hidden">
