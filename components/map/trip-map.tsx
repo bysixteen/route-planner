@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState, useCallback, useImperativeHandle, forwardRef } from "react";
 import mapboxgl from "mapbox-gl";
 import "mapbox-gl/dist/mapbox-gl.css";
-import { Camera } from "lucide-react";
+import { Camera, Fuel } from "lucide-react";
 
 import {
   MAPBOX_TOKEN,
@@ -18,6 +18,9 @@ import { buildMapsUrl } from "@/lib/maps-link";
 import { POI_DATA, type PoiType } from "@/lib/poi-data";
 import type { Stop } from "@/lib/types";
 import type { CampsiteOption } from "@/lib/campsite-options";
+
+const escHtml = (s: string) =>
+  s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 
 const POI_EMOJI: Record<PoiType, string> = {
   viewpoint: "📷",
@@ -90,11 +93,29 @@ function segmentMidpoint(geometry: GeoJSON.LineString): [number, number] {
   return coords[Math.floor(coords.length / 2)];
 }
 
-function geographicMidpoint(
-  a: { lng: number; lat: number },
-  b: { lng: number; lat: number },
-): [number, number] {
-  return [(a.lng + b.lng) / 2, (a.lat + b.lat) / 2];
+/** The point at 50% of the cumulative distance ALONG a route polyline — i.e.
+ * on the actual road, not the geographic average of the endpoints (which for a
+ * sea crossing lands in the water). */
+function midpointAlong(coords: [number, number][]): [number, number] {
+  const cum: number[] = [0];
+  let total = 0;
+  for (let i = 1; i < coords.length; i++) {
+    const [lng1, lat1] = coords[i - 1];
+    const [lng2, lat2] = coords[i];
+    const dx = (lng2 - lng1) * Math.cos((((lat1 + lat2) / 2) * Math.PI) / 180);
+    total += Math.hypot(dx, lat2 - lat1);
+    cum.push(total);
+  }
+  const half = total / 2;
+  for (let i = 1; i < coords.length; i++) {
+    if (cum[i] >= half) {
+      const t = (half - cum[i - 1]) / (cum[i] - cum[i - 1] || 1);
+      const [lng1, lat1] = coords[i - 1];
+      const [lng2, lat2] = coords[i];
+      return [lng1 + (lng2 - lng1) * t, lat1 + (lat2 - lat1) * t];
+    }
+  }
+  return coords[Math.floor(coords.length / 2)];
 }
 
 
@@ -122,6 +143,9 @@ export const TripMap = forwardRef<TripMapHandle, TripMapProps>(function TripMap(
   const [styleKey, setStyleKey] = useState<MapStyleKey>("dark");
   const [showSights, setShowSights] = useState(false);
   const poiMarkersRef = useRef<mapboxgl.Marker[]>([]);
+  const [showFuel, setShowFuel] = useState(false);
+  const [fuelZoomedOut, setFuelZoomedOut] = useState(false);
+  const fuelMarkersRef = useRef<mapboxgl.Marker[]>([]);
   const [redrawNonce, setRedrawNonce] = useState(0);
   // Track the style actually applied to the map (initial is set on init). This
   // avoids a mount-timing bug where map.current is null on first render and the
@@ -164,6 +188,69 @@ export const TripMap = forwardRef<TripMapHandle, TripMapProps>(function TripMap(
       poiMarkersRef.current.push(m);
     });
   }, [showSights, isLoaded, redrawNonce]);
+
+  // Live petrol stations from OpenStreetMap (free, no key) for the visible area.
+  const loadFuel = useCallback(async () => {
+    const m = map.current;
+    if (!m) return;
+    fuelMarkersRef.current.forEach((mk) => mk.remove());
+    fuelMarkersRef.current = [];
+    if (!showFuel) return;
+    if (m.getZoom() < 8.5) {
+      setFuelZoomedOut(true);
+      return;
+    }
+    setFuelZoomedOut(false);
+    const b = m.getBounds();
+    if (!b) return;
+    const q = `[out:json][timeout:12];node["amenity"="fuel"](${b.getSouth().toFixed(4)},${b.getWest().toFixed(4)},${b.getNorth().toFixed(4)},${b.getEast().toFixed(4)});out body 80;`;
+    try {
+      const res = await fetch(
+        "https://overpass-api.de/api/interpreter?data=" + encodeURIComponent(q),
+      );
+      if (!res.ok) return;
+      const data = await res.json();
+      if (!map.current || !showFuel) return;
+      for (const n of data.elements ?? []) {
+        if (n.lat == null || n.lon == null) continue;
+        const name: string = n.tags?.name || n.tags?.brand || "Petrol station";
+        const el = document.createElement("div");
+        el.textContent = "⛽";
+        el.style.cssText =
+          "font-size:15px;line-height:1;cursor:pointer;filter:drop-shadow(0 1px 2px rgba(0,0,0,0.7));";
+        const popup = new mapboxgl.Popup({ maxWidth: "220px", offset: 12 }).setHTML(
+          `<div class="pop-title">${escHtml(name)}</div>` +
+            (n.tags?.brand && n.tags.brand !== name
+              ? `<div class="pop-sub">${escHtml(n.tags.brand)}</div>`
+              : "") +
+            `<a href="${buildMapsUrl(n.lat, n.lon, name)}" target="_blank" rel="noopener noreferrer" style="display:inline-block;margin-top:6px;font-size:12px;font-weight:600;color:var(--volt-tint);text-decoration:none">Navigate →</a>`,
+        );
+        const marker = new mapboxgl.Marker(el)
+          .setLngLat([n.lon, n.lat])
+          .setPopup(popup)
+          .addTo(map.current!);
+        fuelMarkersRef.current.push(marker);
+      }
+    } catch {
+      /* Overpass unavailable — fail silent */
+    }
+  }, [showFuel]);
+
+  useEffect(() => {
+    const m = map.current;
+    if (!m || !isLoaded) return;
+    let t: ReturnType<typeof setTimeout> | null = null;
+    const onMove = () => {
+      if (t) clearTimeout(t);
+      t = setTimeout(loadFuel, 400);
+    };
+    loadFuel();
+    m.on("moveend", onMove);
+    return () => {
+      if (t) clearTimeout(t);
+      m.off("moveend", onMove);
+    };
+  }, [showFuel, isLoaded, loadFuel]);
 
   // Dim markers + route segments outside the focused leg.
   const applyFocus = useCallback(() => {
@@ -489,10 +576,13 @@ export const TripMap = forwardRef<TripMapHandle, TripMapProps>(function TripMap(
                     ],
                   };
 
-            const midpoint =
+            const midpoint: [number, number] =
               geometry.coordinates.length >= 2
                 ? segmentMidpoint(geometry)
-                : geographicMidpoint(stops[i].location, stops[i + 1].location);
+                : [
+                    (stops[i].location.lng + stops[i + 1].location.lng) / 2,
+                    (stops[i].location.lat + stops[i + 1].location.lat) / 2,
+                  ];
 
             return {
               type: "Feature",
@@ -531,19 +621,24 @@ export const TripMap = forwardRef<TripMapHandle, TripMapProps>(function TripMap(
         newSourceIds.push("segment-labels-src");
         newLayerIds.push("segment-labels");
 
-        // Break stop markers at geographic midpoints — visible at zoom >= 7
-        const breakFeatures: GeoJSON.Feature<GeoJSON.Point>[] = stops
-          .slice(0, -1)
-          .map((stop, i) => ({
-            type: "Feature",
-            properties: {
-              label: `Approx. halfway between ${stop.name} and ${stops[i + 1].name}`,
-            },
-            geometry: {
-              type: "Point",
-              coordinates: geographicMidpoint(stop.location, stops[i + 1].location),
-            },
-          }));
+        // Suggested break: halfway ALONG the road, only on real driving legs of
+        // 2 h+ (skips the Channel crossing and short hops). Visible at zoom >= 7.
+        const breakFeatures: GeoJSON.Feature<GeoJSON.Point>[] = route.segments
+          .map((segment, i): GeoJSON.Feature<GeoJSON.Point> | null => {
+            const coords = segment.geometry?.coordinates as
+              | [number, number][]
+              | undefined;
+            if (!coords || coords.length <= 2) return null; // no real road (e.g. ferry/tunnel)
+            if (segment.duration / 3600 < 2) return null; // only worth it on longer drives
+            return {
+              type: "Feature",
+              properties: {
+                label: `Roughly halfway on the ${stops[i].name} → ${stops[i + 1].name} leg`,
+              },
+              geometry: { type: "Point", coordinates: midpointAlong(coords) },
+            };
+          })
+          .filter((f): f is GeoJSON.Feature<GeoJSON.Point> => f !== null);
 
         map.current!.addSource("break-stops-src", {
           type: "geojson",
@@ -601,21 +696,42 @@ export const TripMap = forwardRef<TripMapHandle, TripMapProps>(function TripMap(
         ))}
       </div>
 
-      {/* Sights layer toggle */}
-      <button
-        type="button"
-        onClick={() => setShowSights((s) => !s)}
-        aria-pressed={showSights}
-        className={cn(
-          "glass focus-ring absolute left-1/2 top-[calc(3.25rem+env(safe-area-inset-top))] z-10 flex -translate-x-1/2 items-center gap-1.5 rounded-full px-3 py-1.5 text-[11px] font-medium transition-colors",
-          showSights
-            ? "text-volt-tint"
-            : "text-muted-foreground hover:text-foreground",
+      {/* Map layer toggles: sights + live fuel */}
+      <div className="absolute left-1/2 top-[calc(3.25rem+env(safe-area-inset-top))] z-10 flex -translate-x-1/2 items-center gap-2">
+        <button
+          type="button"
+          onClick={() => setShowSights((s) => !s)}
+          aria-pressed={showSights}
+          className={cn(
+            "glass focus-ring flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[11px] font-medium transition-colors",
+            showSights
+              ? "text-volt-tint"
+              : "text-muted-foreground hover:text-foreground",
+          )}
+        >
+          <Camera className="size-3.5" />
+          {showSights ? "Sights on" : `Sights (${POI_DATA.length})`}
+        </button>
+        <button
+          type="button"
+          onClick={() => setShowFuel((s) => !s)}
+          aria-pressed={showFuel}
+          className={cn(
+            "glass focus-ring flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[11px] font-medium transition-colors",
+            showFuel
+              ? "text-volt-tint"
+              : "text-muted-foreground hover:text-foreground",
+          )}
+        >
+          <Fuel className="size-3.5" />
+          {showFuel ? "Fuel on" : "Fuel"}
+        </button>
+        {showFuel && fuelZoomedOut && (
+          <span className="glass rounded-full px-2.5 py-1.5 text-[10px] text-muted-foreground">
+            Zoom in for stations
+          </span>
         )}
-      >
-        <Camera className="size-3.5" />
-        {showSights ? "Sights on" : `Sights (${POI_DATA.length})`}
-      </button>
+      </div>
     </div>
   );
 });
