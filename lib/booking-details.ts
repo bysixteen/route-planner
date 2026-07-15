@@ -9,6 +9,21 @@ export interface BookingRef {
   value: string;
 }
 
+export interface TollInfo {
+  /** Toll road or vignette name, e.g. "Austrian vignette (ASFINAG)". */
+  name: string;
+  /** "vignette" = buy before you reach the country; "booth" = pay at the gate. */
+  type: "vignette" | "booth";
+  /** Short context note. */
+  notes?: string;
+  /** Payment methods accepted, e.g. ["Card", "Cash (€)"]. */
+  payment: string[];
+  /** Typical cost including validity period, e.g. "€10.20 (10 days)". */
+  cost?: string;
+  /** URL to purchase online. */
+  buyUrl?: string;
+}
+
 export interface BookingExtra {
   /** Check-in window, e.g. "12:00 – 23:00". */
   checkIn?: string;
@@ -44,11 +59,17 @@ export interface BookingExtra {
    * Shown in the "Sports & leisure" widget.
    */
   sports?: string[];
+  /**
+   * Tolls or vignettes required for the leg into or through this stop's country.
+   * Shown in the "Tolls & vignettes" widget.
+   */
+  tolls?: TollInfo[];
 }
 
 const BY_REF: Record<string, BookingExtra> = {
   // Camping Memling, Bruges (18–20 Jul)
   RE792256C: {
+    address: "Veltemweg 109, 8310 Brugge, Belgium",
     checkIn: "12:00 – 23:00",
     checkOut: "07:00 – 11:30",
     arrivalNote:
@@ -73,9 +94,26 @@ const BY_NAME: Record<string, BookingExtra> = {
       "Add Advance Passenger Information (API) for every passenger before check-in — passport details, legal requirement or you can't travel.",
       "UK nationals don't need a UK ETA.",
     ],
+    tolls: [
+      {
+        name: "A16 motorway toll (France)",
+        type: "booth",
+        notes: "Short section from Calais heading towards Belgium — a few euros. Pay at the barrier on exit.",
+        payment: ["Card (contactless)", "Cash (€)"],
+      },
+    ],
   },
   // Château du Gandspette (Éperlecques) — last night before the return crossing
   Calais: {
+    address: "133 rue du Gandspette, 62910 Éperlecques, France",
+    tolls: [
+      {
+        name: "A16/A26 motorway toll (France)",
+        type: "booth",
+        notes: "Applies on the return leg from Belgium into France and on the A26 towards Calais. Pay at the barrier on exit. A few euros.",
+        payment: ["Card (contactless)", "Cash (€)"],
+      },
+    ],
     refs: [
       { label: "LeShuttle", value: "13449491" },
       { label: "Gandspette", value: "17760062" },
@@ -101,6 +139,7 @@ const BY_NAME: Record<string, BookingExtra> = {
   },
   // Camping Bissen, Luxembourg (booked)
   Luxembourg: {
+    address: "11 Millewee, L-9659 Heiderscheidergrund, Luxembourg",
     reminders: [
       "Awning policy isn't published — worth confirming the pitch fits an awning with reception.",
     ],
@@ -109,11 +148,22 @@ const BY_NAME: Record<string, BookingExtra> = {
   },
   // Camping Carpe Diem, Wildberg (booked) — 90 parcelled pitches
   Wildberg: {
+    address: "Martinshölzle 6-8, 72218 Wildberg, Germany",
     reminders: [
       "Awning policy isn't published — parcelled pitches, so confirm awning room with reception.",
     ],
     campsiteAmenities: ["Laundry", "Tumble dryer", "Bar & snack bar", "Playground"],
     sports: ["Swimming pool (unheated, Jul–Aug)", "Badminton", "Table tennis"],
+    tolls: [
+      {
+        name: "Austrian motorway vignette (ASFINAG)",
+        type: "vignette",
+        notes: "Required on all Austrian motorways — buy before crossing the border. Digital vignette only from 2027 (physical stickers discontinued). Also available at Austrian border petrol stations.",
+        payment: ["Card", "PayPal", "Amazon Pay"],
+        cost: "€10.20 (10 days)",
+        buyUrl: "https://shop.asfinag.at/en/",
+      },
+    ],
   },
   // Gerhardhof, Wildermieming (Ref 2026-034828) — booked "Stellplatz Transit"
   Wildermieming: {
@@ -157,9 +207,20 @@ const BY_NAME: Record<string, BookingExtra> = {
     reminders: ["Balance due on arrival — pay at reception by card or cash."],
     campsiteAmenities: ["Laundry", "Tumble dryer", "Dishwasher", "Shop", "Restaurant & bar", "Playground", "BBQ (permitted)", "Accessible"],
     sports: ["Bike hire", "Heated pools (Happyland, adj.)", "Sauna (Happyland, adj.)", "Tennis (Happyland, adj.)", "Gym (Happyland, adj.)"],
+    tolls: [
+      {
+        name: "Hungarian e-Matrica",
+        type: "vignette",
+        notes: "Required before entering Hungary. Buy online or at border petrol stations and staffed kiosks. D2 category (passenger car / campervan up to 3.5 t).",
+        payment: ["Card (online)", "Cash (border kiosks)"],
+        cost: "~€15 (10 days)",
+        buyUrl: "https://e-autopalyamatrica.hu/en",
+      },
+    ],
   },
   // Camping Gülser Moselbogen, Koblenz — large pitches with a paved awning area
   Koblenz: {
+    address: "Am Gülser Moselbogen 20, 56072 Koblenz-Güls, Germany",
     awning: "yes",
     awningNote:
       "Large ~100 m² pitches with a paved area in front specifically for awnings.",
@@ -168,6 +229,7 @@ const BY_NAME: Record<string, BookingExtra> = {
   },
   // KNAUS Campingpark Nürnberg (booked)
   Nuremberg: {
+    address: "Hans-Kalb-Straße 56, 90471 Nürnberg, Germany",
     reminders: [
       "Awning policy isn't published — confirm awning room for your pitch with reception.",
     ],

@@ -7,7 +7,7 @@ import { CopyButton } from "@/components/trip/copy-button";
 import { NavigateButton } from "@/components/trip/navigate-button";
 import { StopWeather } from "@/components/trip/stop-weather";
 import { Badge } from "@/components/ui/badge";
-import { getBookingExtraForStop } from "@/lib/booking-details";
+import { getBookingExtraForStop, type TollInfo } from "@/lib/booking-details";
 import {
   formatDistance,
   formatDuration,
@@ -322,6 +322,54 @@ export function StopDetailPanel({ leg, onClose, embedded }: StopDetailPanelProps
                 );
               })}
             </ul>
+          </div>
+        )}
+
+        {/* Tolls & vignettes */}
+        {extra?.tolls && extra.tolls.length > 0 && (
+          <div>
+            <p className="label mb-1.5 text-muted-foreground">
+              Tolls &amp; vignettes
+            </p>
+            <div className="flex flex-col gap-3">
+              {extra.tolls.map((toll: TollInfo) => (
+                <div key={toll.name} className="rounded-lg bg-white/[0.04] p-3">
+                  <div className="mb-1 flex flex-wrap items-center gap-2">
+                    <span className="text-[13px] font-medium">{toll.name}</span>
+                    <span className="rounded-full bg-white/[0.08] px-2 py-0.5 text-[11px] text-muted-foreground">
+                      {toll.type === "vignette" ? "Buy before entry" : "Pay at booth"}
+                    </span>
+                  </div>
+                  {toll.notes && (
+                    <p className="mb-2 text-[13px] leading-relaxed text-foreground/70">
+                      {toll.notes}
+                    </p>
+                  )}
+                  <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground">
+                    <span>
+                      <span className="font-medium text-foreground/80">Payment: </span>
+                      {toll.payment.join(" · ")}
+                    </span>
+                    {toll.cost && (
+                      <span>
+                        <span className="font-medium text-foreground/80">Cost: </span>
+                        {toll.cost}
+                      </span>
+                    )}
+                  </div>
+                  {toll.buyUrl && (
+                    <a
+                      href={toll.buyUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="focus-ring mt-2 inline-flex items-center gap-1 rounded text-[13px] font-medium text-volt-bright hover:underline"
+                    >
+                      Buy online <ExternalLink className="size-3" />
+                    </a>
+                  )}
+                </div>
+              ))}
+            </div>
           </div>
         )}
 

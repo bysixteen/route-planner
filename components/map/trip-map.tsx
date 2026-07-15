@@ -202,19 +202,23 @@ export const TripMap = forwardRef<TripMapHandle, TripMapProps>(function TripMap(
     poiRootsRef.current = [];
     if (sightCats.size === 0) return;
     POI_DATA.filter((p) => sightCats.has(p.type)).forEach((p) => {
-      const el = iconEl(POI_ICON[p.type], poiRootsRef.current);
-      el.className = "map-disc map-disc--poi";
-      const popup = new mapboxgl.Popup({ maxWidth: "250px", offset: 16 }).setHTML(
-        `<div class="pop-title">${escHtml(p.name)}</div>` +
-          `<div class="pop-sub" style="color:var(--foreground);opacity:.85">${escHtml(p.blurb)}</div>` +
-          `<div style="margin-top:6px;font-size:11px;color:var(--muted-foreground);text-transform:capitalize">${p.type} · ${p.stopLength} · ${escHtml(p.source)}</div>` +
-          `<a href="${buildMapsUrl(p.lat, p.lng, p.name)}" target="_blank" rel="noopener noreferrer" style="display:inline-block;margin-top:6px;font-size:12px;font-weight:600;color:var(--volt-tint);text-decoration:none">Navigate →</a>`,
-      );
-      const m = new mapboxgl.Marker({ element: el, anchor: "center" })
-        .setLngLat([p.lng, p.lat])
-        .setPopup(popup)
-        .addTo(map.current!);
-      poiMarkersRef.current.push(m);
+      try {
+        const el = iconEl(POI_ICON[p.type], poiRootsRef.current);
+        el.className = "map-disc map-disc--poi";
+        const popup = new mapboxgl.Popup({ maxWidth: "250px", offset: 16 }).setHTML(
+          `<div class="pop-title">${escHtml(p.name)}</div>` +
+            `<div class="pop-sub" style="color:var(--foreground);opacity:.85">${escHtml(p.blurb)}</div>` +
+            `<div style="margin-top:6px;font-size:11px;color:var(--muted-foreground);text-transform:capitalize">${p.type} · ${p.stopLength} · ${escHtml(p.source)}</div>` +
+            `<a href="${buildMapsUrl(p.lat, p.lng, p.name)}" target="_blank" rel="noopener noreferrer" style="display:inline-block;margin-top:6px;font-size:12px;font-weight:600;color:var(--volt-tint);text-decoration:none">Navigate →</a>`,
+        );
+        const m = new mapboxgl.Marker({ element: el, anchor: "center" })
+          .setLngLat([p.lng, p.lat])
+          .setPopup(popup)
+          .addTo(map.current!);
+        poiMarkersRef.current.push(m);
+      } catch {
+        /* skip a bad marker rather than crash the whole layer */
+      }
     });
   }, [sightCats, isLoaded, redrawNonce]);
 
@@ -264,6 +268,7 @@ export const TripMap = forwardRef<TripMapHandle, TripMapProps>(function TripMap(
         placed.some((p) => Math.hypot(p.x - x, p.y - y) < 44);
 
       const render = (s: FuelStation, pricePill: boolean) => {
+       try {
         const pt = map.current!.project([s.lng, s.lat]);
         if (tooClose(pt.x, pt.y)) return;
         placed.push({ x: pt.x, y: pt.y });
@@ -292,6 +297,9 @@ export const TripMap = forwardRef<TripMapHandle, TripMapProps>(function TripMap(
           .setPopup(popup)
           .addTo(map.current!);
         fuelMarkersRef.current.push(marker);
+       } catch {
+        /* skip a bad marker rather than crash the layer */
+       }
       };
 
       priced.forEach((s) => render(s, true));
