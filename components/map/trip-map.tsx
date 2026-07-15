@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState, useCallback, useImperativeHandle, forwardRef } from "react";
 import mapboxgl from "mapbox-gl";
 import "mapbox-gl/dist/mapbox-gl.css";
+import { Camera } from "lucide-react";
 
 import {
   MAPBOX_TOKEN,
@@ -13,8 +14,20 @@ import {
 } from "@/lib/mapbox/config";
 import { getRoute, formatDuration, formatDistance, type RouteResult } from "@/lib/mapbox/directions";
 import { cn } from "@/lib/utils";
+import { buildMapsUrl } from "@/lib/maps-link";
+import { POI_DATA, type PoiType } from "@/lib/poi-data";
 import type { Stop } from "@/lib/types";
 import type { CampsiteOption } from "@/lib/campsite-options";
+
+const POI_EMOJI: Record<PoiType, string> = {
+  viewpoint: "📷",
+  lake: "🏊",
+  castle: "🏰",
+  restaurant: "🍽️",
+  attraction: "🎡",
+  nature: "🌲",
+  town: "🏘️",
+};
 
 type MapStyleKey = keyof typeof MAP_STYLES;
 const STYLE_OPTIONS: { key: MapStyleKey; label: string }[] = [
@@ -107,6 +120,8 @@ export const TripMap = forwardRef<TripMapHandle, TripMapProps>(function TripMap(
   const routeSourceIdsRef = useRef<string[]>([]);
   const [isLoaded, setIsLoaded] = useState(false);
   const [styleKey, setStyleKey] = useState<MapStyleKey>("dark");
+  const [showSights, setShowSights] = useState(false);
+  const poiMarkersRef = useRef<mapboxgl.Marker[]>([]);
   const [redrawNonce, setRedrawNonce] = useState(0);
   // Track the style actually applied to the map (initial is set on init). This
   // avoids a mount-timing bug where map.current is null on first render and the
@@ -121,6 +136,34 @@ export const TripMap = forwardRef<TripMapHandle, TripMapProps>(function TripMap(
     map.current.setStyle(MAP_STYLES[styleKey]);
     map.current.once("style.load", () => setRedrawNonce((n) => n + 1));
   }, [styleKey]);
+
+  // Sightseeing POI layer — togglable emoji markers, each with a popup.
+  useEffect(() => {
+    if (!map.current || !isLoaded) return;
+    poiMarkersRef.current.forEach((m) => m.remove());
+    poiMarkersRef.current = [];
+    if (!showSights) return;
+    const esc = (s: string) =>
+      s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+    POI_DATA.forEach((p) => {
+      const el = document.createElement("div");
+      el.textContent = POI_EMOJI[p.type];
+      el.style.cssText =
+        "font-size:18px;line-height:1;cursor:pointer;filter:drop-shadow(0 1px 2px rgba(0,0,0,0.7));";
+      const popup = new mapboxgl.Popup({ maxWidth: "250px", offset: 14 })
+        .setHTML(
+          `<div class="pop-title">${esc(p.name)}</div>` +
+            `<div class="pop-sub" style="color:var(--foreground);opacity:.85">${esc(p.blurb)}</div>` +
+            `<div style="margin-top:6px;font-size:11px;color:var(--muted-foreground);text-transform:capitalize">${p.type} · ${p.stopLength} · ${esc(p.source)}</div>` +
+            `<a href="${buildMapsUrl(p.lat, p.lng, p.name)}" target="_blank" rel="noopener noreferrer" style="display:inline-block;margin-top:6px;font-size:12px;font-weight:600;color:var(--volt-tint);text-decoration:none">Navigate →</a>`,
+        );
+      const m = new mapboxgl.Marker(el)
+        .setLngLat([p.lng, p.lat])
+        .setPopup(popup)
+        .addTo(map.current!);
+      poiMarkersRef.current.push(m);
+    });
+  }, [showSights, isLoaded, redrawNonce]);
 
   // Dim markers + route segments outside the focused leg.
   const applyFocus = useCallback(() => {
@@ -557,6 +600,22 @@ export const TripMap = forwardRef<TripMapHandle, TripMapProps>(function TripMap(
           </button>
         ))}
       </div>
+
+      {/* Sights layer toggle */}
+      <button
+        type="button"
+        onClick={() => setShowSights((s) => !s)}
+        aria-pressed={showSights}
+        className={cn(
+          "glass focus-ring absolute left-1/2 top-[calc(3.25rem+env(safe-area-inset-top))] z-10 flex -translate-x-1/2 items-center gap-1.5 rounded-full px-3 py-1.5 text-[11px] font-medium transition-colors",
+          showSights
+            ? "text-volt-tint"
+            : "text-muted-foreground hover:text-foreground",
+        )}
+      >
+        <Camera className="size-3.5" />
+        {showSights ? "Sights on" : `Sights (${POI_DATA.length})`}
+      </button>
     </div>
   );
 });
