@@ -182,7 +182,11 @@ export const TripMap = forwardRef<TripMapHandle, TripMapProps>(function TripMap(
       zoom: DEFAULT_ZOOM,
     });
 
-    map.current.addControl(new mapboxgl.NavigationControl(), "top-right");
+    // Zoom control on desktop only — pinch handles it on mobile, and it
+    // otherwise crowds the top-right against the sheet + safe area.
+    if (typeof window !== "undefined" && window.innerWidth >= 768) {
+      map.current.addControl(new mapboxgl.NavigationControl(), "top-right");
+    }
 
     map.current.on("load", () => {
       setIsLoaded(true);
@@ -260,21 +264,25 @@ export const TripMap = forwardRef<TripMapHandle, TripMapProps>(function TripMap(
         overnightNumber++;
         el.className = "stop-marker";
         const bookable = stop.type === "campsite" || stop.type === "transport";
+        // Booking status is carried by the RING only; the traffic-light greens
+        // /ambers/reds stay reserved for route drive-health. Markers get one
+        // neutral fill (volt for the event/destination) so nothing collides.
         const ring = bookable
           ? stop.bookingReference
             ? "#2fbf71" // booked
             : "#e8b23a" // not booked
           : null;
+        const fill = stop.type === "event" ? VOLT : "#2a2e35";
         el.style.cssText = `
           width: 32px;
           height: 32px;
-          background-color: ${STOP_TYPE_COLOURS[stop.type] || "#6b7280"};
+          background-color: ${fill};
           border: 3px solid white;
           border-radius: 50%;
           display: flex;
           align-items: center;
           justify-content: center;
-          color: #0B0C0E;
+          color: #ffffff;
           font-weight: bold;
           font-size: 14px;
           box-shadow: ${ring ? `0 0 0 2.5px ${ring}, ` : ""}0 2px 5px rgba(0,0,0,0.4);
@@ -305,7 +313,13 @@ export const TripMap = forwardRef<TripMapHandle, TripMapProps>(function TripMap(
     if (options && options.length > 0) {
       options.forEach((opt) => bounds.extend(opt.coords));
     }
-    map.current.fitBounds(bounds, { padding: 50 });
+    const onMobile =
+      typeof window !== "undefined" && window.innerWidth < 768;
+    map.current.fitBounds(bounds, {
+      padding: onMobile
+        ? { top: 60, left: 40, right: 40, bottom: Math.round(window.innerHeight * 0.5) }
+        : 50,
+    });
     applyFocus();
 
     // Campsite option markers — DOM markers (purple/pink dots)
@@ -466,7 +480,7 @@ export const TripMap = forwardRef<TripMapHandle, TripMapProps>(function TripMap(
           },
           paint: {
             "text-color": "#ffffff",
-            "text-halo-color": "rgba(17,24,39,0.9)",
+            "text-halo-color": "rgba(11,12,14,0.9)",
             "text-halo-width": 2.5,
           },
         });

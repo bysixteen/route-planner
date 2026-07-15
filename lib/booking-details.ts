@@ -34,6 +34,16 @@ export interface BookingExtra {
    * email (no DB reference yet). Drives the booked status/ring/count.
    */
   confirmed?: boolean;
+  /**
+   * Campsite service facilities (laundry, shop, bar, playground, etc.).
+   * Curated from the campsite's own website — shown in the "Campsite facilities" widget.
+   */
+  campsiteAmenities?: string[];
+  /**
+   * Sports & leisure facilities (pool, tennis, bike hire, etc.).
+   * Shown in the "Sports & leisure" widget.
+   */
+  sports?: string[];
 }
 
 const BY_REF: Record<string, BookingExtra> = {
@@ -48,6 +58,8 @@ const BY_REF: Record<string, BookingExtra> = {
     awning: "conditional",
     awningNote:
       "Room for the van plus an awning, but pitches are small and close together.",
+    campsiteAmenities: ["Laundry", "Tumble dryer", "BBQ (permitted)"],
+    sports: [],
   },
 };
 
@@ -76,6 +88,8 @@ const BY_NAME: Record<string, BookingExtra> = {
     reminders: [
       "Return crossing — add Advance Passenger Information (API) before check-in.",
     ],
+    campsiteAmenities: ["Laundry", "Tumble dryer", "Bar & restaurant", "Playground", "Accessible"],
+    sports: ["Heated swimming pool", "Tennis", "Multi-sports court", "Outdoor fitness"],
   },
   // Hungarian GP tickets
   Hungaroring: {
@@ -90,12 +104,16 @@ const BY_NAME: Record<string, BookingExtra> = {
     reminders: [
       "Awning policy isn't published — worth confirming the pitch fits an awning with reception.",
     ],
+    campsiteAmenities: ["Laundry", "Tumble dryer", "Shop", "Bar & restaurant", "Playground", "Accessible"],
+    sports: ["Spa & sauna (bookable)", "Bike hire", "Volleyball", "Kayaking"],
   },
   // Camping Carpe Diem, Wildberg (booked) — 90 parcelled pitches
   Wildberg: {
     reminders: [
       "Awning policy isn't published — parcelled pitches, so confirm awning room with reception.",
     ],
+    campsiteAmenities: ["Laundry", "Tumble dryer", "Bar & snack bar", "Playground"],
+    sports: ["Swimming pool (unheated, Jul–Aug)", "Badminton", "Table tennis"],
   },
   // Gerhardhof, Wildermieming (Ref 2026-034828) — booked "Stellplatz Transit"
   Wildermieming: {
@@ -104,6 +122,8 @@ const BY_NAME: Record<string, BookingExtra> = {
     awning: "conditional",
     awningNote:
       "Awnings are usually fine here, but this is a 1-night transit pitch — phone ahead to confirm (+43 5264 5240).",
+    campsiteAmenities: ["Laundry", "Tumble dryer", "Dishwasher", "Shop", "Restaurant", "BBQ area", "Playground"],
+    sports: ["Natural swimming pond", "Sports field", "Beach volleyball", "Bike hire"],
   },
   // Wachau (Melk) — Campingplatz der Stadt Melk, 23–24 Jul, pitch 8
   Wachau: {
@@ -120,6 +140,8 @@ const BY_NAME: Record<string, BookingExtra> = {
       "Use the Pre-Check-In link in the confirmation email to save time at arrival.",
       "Awning policy isn't stated — confirm with the wardens on arrival.",
     ],
+    campsiteAmenities: ["Laundry", "Tumble dryer", "Kitchen", "Shop", "BBQ area"],
+    sports: ["Bike hire"],
   },
   // Donaupark Camping Klosterneuburg (ÖAMTC) — 27–28 Jul, awning confirmed by site
   Klosterneuburg: {
@@ -133,18 +155,24 @@ const BY_NAME: Record<string, BookingExtra> = {
     siteInfoUrl: "https://www.campingklosterneuburg.at/app/de",
     siteInfoLabel: "Donaupark Camping",
     reminders: ["Balance due on arrival — pay at reception by card or cash."],
+    campsiteAmenities: ["Laundry", "Tumble dryer", "Dishwasher", "Shop", "Restaurant & bar", "Playground", "BBQ (permitted)", "Accessible"],
+    sports: ["Bike hire", "Heated pools (Happyland, adj.)", "Sauna (Happyland, adj.)", "Tennis (Happyland, adj.)", "Gym (Happyland, adj.)"],
   },
   // Camping Gülser Moselbogen, Koblenz — large pitches with a paved awning area
   Koblenz: {
     awning: "yes",
     awningNote:
       "Large ~100 m² pitches with a paved area in front specifically for awnings.",
+    campsiteAmenities: ["Laundry", "Tumble dryer", "Dishwasher", "Shop", "Bar & pizzeria", "Playground", "Accessible"],
+    sports: ["Bike hire (city & e-bikes)", "Sports field (football, volleyball, basketball)"],
   },
   // KNAUS Campingpark Nürnberg (booked)
   Nuremberg: {
     reminders: [
       "Awning policy isn't published — confirm awning room for your pitch with reception.",
     ],
+    campsiteAmenities: ["Laundry", "Tumble dryer", "Kitchen", "Shop", "Bar & bistro", "Playground", "Accessible"],
+    sports: ["Table tennis", "Outdoor pool (250 m, unheated)"],
   },
 };
 

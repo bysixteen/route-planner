@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { X, ExternalLink } from "lucide-react";
 
 import { CopyButton } from "@/components/trip/copy-button";
+import { NavigateButton } from "@/components/trip/navigate-button";
 import { StopWeather } from "@/components/trip/stop-weather";
 import { Badge } from "@/components/ui/badge";
 import { getBookingExtraForStop } from "@/lib/booking-details";
@@ -50,7 +51,7 @@ function detectFacilities(notes: string | null, amenities?: string[] | null): st
   if (/chemical|waste|disposal|dump|cassette|grey/.test(text))
     chips.push("Waste disposal");
   if (/\bdog|pet/.test(text)) chips.push("Dog-friendly");
-  if (/wi-?fi/.test(text)) chips.push("WiFi");
+  if (/wi-?fi/.test(text)) chips.push("Wi-Fi");
   return chips;
 }
 
@@ -91,10 +92,14 @@ function detectSports(notes: string | null, amenities?: string[] | null): string
 export function StopDetailPanel({ leg, onClose, embedded }: StopDetailPanelProps) {
   const { stop, prevStop, minutes, distance } = leg;
   const booking = getBookingStatus(stop);
-  const facilities = detectFacilities(stop.notes, stop.amenities);
-  const campsiteAmenities = stop.type === "campsite" ? detectCampsiteAmenities(stop.notes, stop.amenities) : [];
-  const sports = stop.type === "campsite" ? detectSports(stop.notes, stop.amenities) : [];
   const extra = getBookingExtraForStop(stop);
+  const facilities = detectFacilities(stop.notes, stop.amenities);
+  const campsiteAmenities =
+    extra?.campsiteAmenities ??
+    (stop.type === "campsite" ? detectCampsiteAmenities(stop.notes, stop.amenities) : []);
+  const sports =
+    extra?.sports ??
+    (stop.type === "campsite" ? detectSports(stop.notes, stop.amenities) : []);
   const hasDrive = minutes > 0;
 
   // Address: prefer the confirmed static one, else reverse-geocode the coords.
@@ -174,40 +179,32 @@ export function StopDetailPanel({ leg, onClose, embedded }: StopDetailPanelProps
 
         {/* Address & satnav — address primary, coordinates as fallback */}
         <div>
-          <p className="coordinate mb-1.5 text-[11px] uppercase tracking-[0.14em] text-muted-foreground">
+          <p className="label mb-1.5 text-muted-foreground">
             Address &amp; satnav
           </p>
-          {address ? (
-            <>
-              <p className="mb-2 text-sm leading-snug">{address}</p>
-              <div className="flex flex-wrap items-center gap-2">
-                <CopyButton
-                  value={address}
-                  label="Copy address for satnav"
-                  title="Copy address for satnav"
-                />
-                <span className="coordinate text-[13px] text-muted-foreground">
-                  {formatCoordinate(stop.lat, stop.lng)}
-                </span>
-                <CopyButton
-                  value={formatCoordinatePlain(stop.lat, stop.lng)}
-                  label="Copy coordinates"
-                  title="Copy coordinates for satnav"
-                />
-              </div>
-            </>
-          ) : (
-            <div className="flex flex-wrap items-center gap-2">
-              <span className="coordinate text-xs text-muted-foreground">
-                {formatCoordinate(stop.lat, stop.lng)}
-              </span>
+          {address && <p className="mb-2 text-sm leading-snug">{address}</p>}
+          <div className="flex flex-wrap items-center gap-2">
+            <NavigateButton
+              lat={stop.lat}
+              lng={stop.lng}
+              label={address ?? stop.name}
+            />
+            {address && (
               <CopyButton
-                value={formatCoordinatePlain(stop.lat, stop.lng)}
-                label="Copy for satnav"
-                title="Copy coordinates for satnav"
+                value={address}
+                label="Copy address"
+                title="Copy address"
               />
-            </div>
-          )}
+            )}
+            <CopyButton
+              value={formatCoordinatePlain(stop.lat, stop.lng)}
+              label="Copy coordinates"
+              title="Copy coordinates"
+            />
+          </div>
+          <p className="coordinate mt-1.5 text-[13px] text-muted-foreground">
+            {formatCoordinate(stop.lat, stop.lng)}
+          </p>
         </div>
 
         {/* Booking / refs / cost / links */}
@@ -217,7 +214,7 @@ export function StopDetailPanel({ leg, onClose, embedded }: StopDetailPanelProps
           (extra?.refs?.length ?? 0) > 0 ||
           extra?.siteInfoUrl) && (
           <div>
-            <p className="coordinate mb-1.5 text-[11px] uppercase tracking-[0.14em] text-muted-foreground">
+            <p className="label mb-1.5 text-muted-foreground">
               Booking
             </p>
             <div className="flex flex-wrap items-center gap-2">
@@ -272,7 +269,7 @@ export function StopDetailPanel({ leg, onClose, embedded }: StopDetailPanelProps
         {/* Check-in (from the confirmation email) */}
         {extra && (extra.checkIn || extra.checkOut || extra.arrivalNote) && (
           <div>
-            <p className="coordinate mb-1.5 text-[11px] uppercase tracking-[0.14em] text-muted-foreground">
+            <p className="label mb-1.5 text-muted-foreground">
               Check-in
             </p>
             {(extra.checkIn || extra.checkOut) && (
@@ -292,7 +289,7 @@ export function StopDetailPanel({ leg, onClose, embedded }: StopDetailPanelProps
               </div>
             )}
             {extra.arrivalNote && (
-              <p className="mt-1.5 text-[13px] leading-relaxed text-muted-foreground">
+              <p className="mt-1.5 text-[13px] leading-relaxed text-foreground/80">
                 {extra.arrivalNote}
               </p>
             )}
@@ -302,19 +299,28 @@ export function StopDetailPanel({ leg, onClose, embedded }: StopDetailPanelProps
         {/* Reminders / action items */}
         {extra?.reminders && extra.reminders.length > 0 && (
           <div>
-            <p className="coordinate mb-1.5 text-[11px] uppercase tracking-[0.14em] text-muted-foreground">
+            <p className="label mb-1.5 text-muted-foreground">
               Reminders
             </p>
             <ul className="space-y-1.5">
-              {extra.reminders.map((r, i) => (
-                <li
-                  key={i}
-                  className="flex gap-2 text-[13px] leading-relaxed text-muted-foreground"
-                >
-                  <span className="mt-1 size-1.5 shrink-0 rounded-full bg-health-warn" />
-                  <span>{r}</span>
-                </li>
-              ))}
+              {extra.reminders.map((r, i) => {
+                // Amber only for genuine action-required items; neutral otherwise.
+                const action =
+                  /\b(add|buy|pay|pick up|confirm|before|must|need|balance|due|order)\b/i.test(
+                    r,
+                  );
+                return (
+                  <li
+                    key={i}
+                    className="flex gap-2 text-[13px] leading-relaxed text-foreground/80"
+                  >
+                    <span
+                      className={`mt-1 size-1.5 shrink-0 rounded-full ${action ? "bg-health-warn" : "bg-muted-foreground"}`}
+                    />
+                    <span>{r}</span>
+                  </li>
+                );
+              })}
             </ul>
           </div>
         )}
@@ -322,7 +328,7 @@ export function StopDetailPanel({ leg, onClose, embedded }: StopDetailPanelProps
         {/* Awning */}
         {extra?.awning && (
           <div>
-            <p className="coordinate mb-1.5 text-[11px] uppercase tracking-[0.14em] text-muted-foreground">
+            <p className="label mb-1.5 text-muted-foreground">
               Awning
             </p>
             <div className="flex items-center gap-2">
@@ -344,7 +350,7 @@ export function StopDetailPanel({ leg, onClose, embedded }: StopDetailPanelProps
               </span>
             </div>
             {extra.awningNote && (
-              <p className="mt-1.5 text-[13px] leading-relaxed text-muted-foreground">
+              <p className="mt-1.5 text-[13px] leading-relaxed text-foreground/80">
                 {extra.awningNote}
               </p>
             )}
@@ -353,7 +359,7 @@ export function StopDetailPanel({ leg, onClose, embedded }: StopDetailPanelProps
 
         {/* Pitch & facilities */}
         <div>
-          <p className="coordinate mb-1.5 text-[11px] uppercase tracking-[0.14em] text-muted-foreground">
+          <p className="label mb-1.5 text-muted-foreground">
             Pitch &amp; facilities
           </p>
           {facilities.length > 0 ? (
@@ -368,9 +374,26 @@ export function StopDetailPanel({ leg, onClose, embedded }: StopDetailPanelProps
               ))}
             </div>
           ) : (
-            <p className="text-[13px] text-muted-foreground">
-              No pitch details noted yet — check on arrival (surface, levelling,
-              hookup).
+            <p className="text-[13px] text-foreground/70">
+              Pitch specifics (surface, levelling, hookup) aren&apos;t listed —
+              check on arrival
+              {extra?.siteInfoUrl ? (
+                <>
+                  {" "}
+                  or on the{" "}
+                  <a
+                    href={extra.siteInfoUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="focus-ring rounded font-medium text-volt-bright hover:underline"
+                  >
+                    campsite info
+                  </a>
+                </>
+              ) : (
+                ""
+              )}
+              .
             </p>
           )}
         </div>
@@ -378,7 +401,7 @@ export function StopDetailPanel({ leg, onClose, embedded }: StopDetailPanelProps
         {/* Campsite facilities (laundry, shop, bar, etc.) */}
         {campsiteAmenities.length > 0 && (
           <div>
-            <p className="coordinate mb-1.5 text-[11px] uppercase tracking-[0.14em] text-muted-foreground">
+            <p className="label mb-1.5 text-muted-foreground">
               Campsite facilities
             </p>
             <div className="flex flex-wrap gap-1.5">
@@ -397,7 +420,7 @@ export function StopDetailPanel({ leg, onClose, embedded }: StopDetailPanelProps
         {/* Sports & leisure */}
         {sports.length > 0 && (
           <div>
-            <p className="coordinate mb-1.5 text-[11px] uppercase tracking-[0.14em] text-muted-foreground">
+            <p className="label mb-1.5 text-muted-foreground">
               Sports &amp; leisure
             </p>
             <div className="flex flex-wrap gap-1.5">
@@ -416,7 +439,7 @@ export function StopDetailPanel({ leg, onClose, embedded }: StopDetailPanelProps
         {/* Notes */}
         {stop.notes && (
           <div>
-            <p className="coordinate mb-1.5 text-[11px] uppercase tracking-[0.14em] text-muted-foreground">
+            <p className="label mb-1.5 text-muted-foreground">
               Notes
             </p>
             <p className="whitespace-pre-line text-xs leading-relaxed text-muted-foreground">

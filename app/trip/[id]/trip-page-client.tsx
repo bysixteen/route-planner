@@ -17,12 +17,17 @@ import { TripCockpit } from "@/components/trip/trip-cockpit";
 import { TripDock, type TripView } from "@/components/trip/trip-dock";
 import { StopDetailPanel } from "@/components/trip/stop-detail-panel";
 import { BottomSheet, type Detent } from "@/components/trip/bottom-sheet";
+import { NavigateButton } from "@/components/trip/navigate-button";
+import { CopyButton } from "@/components/trip/copy-button";
 import { Badge } from "@/components/ui/badge";
+import { formatDistance, formatDuration } from "@/lib/mapbox/directions";
+import { getBookingExtraForStop } from "@/lib/booking-details";
 import {
   BOOKABLE_TYPES,
   buildDriveLegs,
   countryFlag,
   getBookingStatus,
+  todayKey,
   type DriveLeg,
   type SupabaseStop,
   type SupabaseTrip,
@@ -97,6 +102,7 @@ export default function TripPageClient() {
   const [trip, setTrip] = useState<SupabaseTrip | null>(null);
   const [route, setRoute] = useState<RouteResult | null>(null);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [view, setView] = useState<View>("cockpit");
   const [detent, setDetent] = useState<Detent>("half");
@@ -105,19 +111,23 @@ export default function TripPageClient() {
   );
   const [selectedLeg, setSelectedLeg] = useState<DriveLeg | null>(null);
 
-  useEffect(() => {
-    async function fetchTrip() {
-      try {
-        const data = await getTripById(tripId);
-        setTrip(data as SupabaseTrip);
-      } catch (error) {
-        console.error("Error fetching trip:", error);
-      } finally {
-        setLoading(false);
-      }
+  const loadTrip = useCallback(async () => {
+    setLoading(true);
+    setLoadError(false);
+    try {
+      const data = await getTripById(tripId);
+      setTrip((data as SupabaseTrip) ?? null);
+    } catch (error) {
+      console.error("Error fetching trip:", error);
+      setLoadError(true);
+    } finally {
+      setLoading(false);
     }
-    fetchTrip();
   }, [tripId]);
+
+  useEffect(() => {
+    loadTrip();
+  }, [loadTrip]);
 
   const handleRouteCalculated = useCallback((r: RouteResult) => setRoute(r), []);
 
@@ -164,8 +174,9 @@ export default function TripPageClient() {
       const leg = allLegs.find((l) => l.index === index);
       if (!leg) return;
       setSelectedLeg((cur) => (cur?.index === index ? null : leg));
-      // Mobile: surface the sheet in detail mode (Map view → back to cockpit).
-      setView((v) => (v === "itinerary" ? "cockpit" : v));
+      // Selecting always lands in the cockpit/route view so the dock highlight
+      // never lies about what's on screen; raise the mobile sheet to half.
+      setView("cockpit");
       setDetent((d) => (d === "peek" ? "half" : d));
       mapRef.current?.flyToStop(index);
     },
@@ -177,6 +188,16 @@ export default function TripPageClient() {
     if (view === "map") setDetent("peek");
     else if (view === "cockpit") setDetent((d) => (d === "peek" ? "half" : d));
   }, [view]);
+
+  // The next upcoming overnight leg — the peek/half sheet's glanceable card.
+  const nextLeg = useMemo(() => {
+    const today = todayKey();
+    return (
+      allLegs.find((l) => l.stop.nights > 0 && (l.date ?? "9999") >= today) ??
+      allLegs.find((l) => l.stop.nights > 0) ??
+      null
+    );
+  }, [allLegs]);
 
   // Outbound / Return leg filter → dims the other leg on the map.
   const focusRange = useMemo((): [number, number] | null => {
@@ -219,15 +240,34 @@ export default function TripPageClient() {
 
   if (loading) {
     return (
-      <div className="flex min-h-screen items-center justify-center">
-        <p className="text-muted-foreground">Loading trip…</p>
+      <div className="flex min-h-[100dvh] items-center justify-center bg-background">
+        <p className="animate-pulse text-muted-foreground">Loading trip…</p>
+      </div>
+    );
+  }
+
+  if (loadError) {
+    return (
+      <div className="flex min-h-[100dvh] flex-col items-center justify-center gap-4 bg-background px-6 text-center">
+        <h1 className="font-display text-2xl font-bold">
+          Couldn&apos;t load this trip
+        </h1>
+        <p className="max-w-sm text-sm text-muted-foreground">
+          Check your connection and try again.
+        </p>
+        <div className="flex gap-2">
+          <Button onClick={loadTrip}>Retry</Button>
+          <Link href="/">
+            <Button variant="outline">Back to trips</Button>
+          </Link>
+        </div>
       </div>
     );
   }
 
   if (!trip) {
     return (
-      <div className="flex min-h-screen flex-col items-center justify-center gap-4">
+      <div className="flex min-h-[100dvh] flex-col items-center justify-center gap-4 bg-background">
         <h1 className="font-display text-2xl font-bold">Trip not found</h1>
         <Link href="/">
           <Button>Back to trips</Button>
@@ -299,8 +339,9 @@ export default function TripPageClient() {
           </div>
         )}
 
-        {/* Desktop: floating cockpit rail — Cockpit view only (Map clears it) */}
-        {view === "cockpit" && (
+        {/* Desktop: floating cockpit rail — kept in Map view too (the map is
+            always visible on desktop; Map should declutter, not remove the index) */}
+        {view !== "itinerary" && (
           <aside className="glass pointer-events-auto absolute z-20 hidden flex-col overflow-hidden rounded-2xl border border-white/10 md:inset-y-4 md:left-4 md:right-auto md:bottom-4 md:top-4 md:flex md:w-[380px]">
             <TripCockpit
               trip={trip}
@@ -353,6 +394,49 @@ export default function TripPageClient() {
                     <Badge variant="unbooked">Not booked</Badge>
                   )}
                 </div>
+              ) : nextLeg ? (
+                (() => {
+                  const s = nextLeg.stop;
+                  const nx = getBookingExtraForStop(s);
+                  const ref = s.booking_reference ?? nx?.refs?.[0]?.value;
+                  return (
+                    <div className="px-4 pb-3">
+                      <button
+                        type="button"
+                        onClick={() => selectStopByIndex(nextLeg.index)}
+                        className="focus-ring flex w-full items-center gap-2 rounded-lg text-left"
+                      >
+                        <span className="rounded bg-highlight px-1.5 py-px text-[10px] font-bold uppercase tracking-wide text-highlight-foreground">
+                          Next
+                        </span>
+                        <span className="font-display min-w-0 flex-1 truncate text-[15px] font-semibold">
+                          {countryFlag(s.country)} {s.name}
+                        </span>
+                        {nextLeg.minutes > 0 && (
+                          <span className="shrink-0 text-[13px] tabular-nums text-muted-foreground">
+                            {formatDuration(nextLeg.minutes * 60)} ·{" "}
+                            {formatDistance(nextLeg.distance)}
+                          </span>
+                        )}
+                      </button>
+                      <div className="mt-2 flex flex-wrap items-center gap-2">
+                        <NavigateButton
+                          lat={s.lat}
+                          lng={s.lng}
+                          label={nx?.address ?? s.name}
+                        />
+                        {ref && (
+                          <CopyButton
+                            value={ref}
+                            label={ref}
+                            title="Copy booking reference"
+                            className="font-mono"
+                          />
+                        )}
+                      </div>
+                    </div>
+                  );
+                })()
               ) : (
                 <div className="flex items-center gap-2 px-5 pb-2">
                   <span className="font-display truncate text-sm font-semibold">

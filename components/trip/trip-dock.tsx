@@ -3,8 +3,8 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import {
+  CalendarDays,
   ChevronLeft,
-  Gauge,
   List,
   Map as MapIcon,
   MoreHorizontal,
@@ -25,9 +25,9 @@ interface TripDockProps {
   deleting: boolean;
 }
 
-const SEGMENTS: { key: TripView; label: string; icon: typeof Gauge }[] = [
-  { key: "cockpit", label: "Cockpit", icon: Gauge },
-  { key: "itinerary", label: "Itinerary", icon: List },
+const SEGMENTS: { key: TripView; label: string; icon: typeof List }[] = [
+  { key: "cockpit", label: "Route", icon: List },
+  { key: "itinerary", label: "Days", icon: CalendarDays },
   { key: "map", label: "Map", icon: MapIcon },
 ];
 
@@ -75,7 +75,7 @@ export function TripDock({
           className="focus-ring flex min-h-[44px] items-center gap-1.5 rounded-full px-3 text-muted-foreground transition-colors hover:text-foreground"
         >
           <ChevronLeft className="size-4" />
-          <span className="font-display max-w-[7rem] truncate text-sm font-semibold">
+          <span className="font-display hidden max-w-[7rem] truncate text-sm font-semibold sm:inline">
             {tripTitle}
           </span>
         </Link>
@@ -93,12 +93,12 @@ export function TripDock({
             className={cn(
               "focus-ring flex min-h-[44px] items-center gap-1.5 rounded-full px-3 text-sm font-medium transition-colors",
               view === key
-                ? "bg-highlight/20 text-[#8fb0ff]"
+                ? "bg-highlight/20 text-volt-tint"
                 : "text-muted-foreground hover:text-foreground",
             )}
           >
             <Icon className="size-4" />
-            <span className="hidden sm:inline">{label}</span>
+            <span>{label}</span>
           </button>
         ))}
 

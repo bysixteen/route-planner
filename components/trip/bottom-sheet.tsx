@@ -119,7 +119,9 @@ export function BottomSheet({
       data-detent={detent}
       className={cn(
         "glass pointer-events-auto fixed inset-x-0 bottom-0 z-20 flex flex-col rounded-t-2xl border-t border-white/10 md:hidden print:hidden",
-        detent === "full" && "bg-background/95",
+        // Near-opaque at half + full so map markers/lines don't bleed behind
+        // the content; keep peek glassy over the map.
+        detent !== "peek" && "bg-background/95",
       )}
       style={{
         height: cur || undefined,

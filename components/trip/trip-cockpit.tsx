@@ -200,6 +200,11 @@ function Stat({
   );
 }
 
+function fmtStopDate(iso: string | null): string {
+  if (!iso) return "";
+  return new Date(iso).toLocaleDateString("en-GB", { day: "numeric", month: "short" });
+}
+
 function StopRow({
   stop,
   isNext,
@@ -214,6 +219,13 @@ function StopRow({
   const booking = getBookingStatus(stop);
   const nightsText =
     stop.nights > 0 ? `${stop.nights} night${stop.nights > 1 ? "s" : ""}` : null;
+
+  const arrival = fmtStopDate(stop.arrival_date);
+  const departure = fmtStopDate(stop.departure_date);
+  const dateRange =
+    arrival && departure
+      ? `${arrival} → ${departure}`
+      : arrival || departure || null;
 
   return (
     <button
@@ -244,8 +256,8 @@ function StopRow({
           {booking === "pending" && (
             <span className="text-health-warn">Not booked</span>
           )}
-          {booking && nightsText && " · "}
-          {nightsText}
+          {booking && (nightsText || dateRange) && " · "}
+          {dateRange ?? nightsText}
         </span>
       </span>
       <ChevronRight className="size-4 shrink-0 text-muted-foreground/60" />

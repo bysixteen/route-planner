@@ -20,17 +20,21 @@ interface CopyButtonProps {
  * Used for booking references and satnav coordinates.
  */
 export function CopyButton({ value, label, title, className }: CopyButtonProps) {
-  const [copied, setCopied] = useState(false);
+  const [state, setState] = useState<"idle" | "copied" | "failed">("idle");
+  const copied = state === "copied";
 
   const handleCopy = useCallback(
     async (e: React.MouseEvent) => {
       e.stopPropagation();
       try {
         await navigator.clipboard.writeText(value);
-        setCopied(true);
-        setTimeout(() => setCopied(false), 2000);
+        navigator.vibrate?.(10);
+        setState("copied");
+        setTimeout(() => setState("idle"), 2000);
       } catch {
-        // Clipboard unavailable (e.g. insecure context) — fail quietly.
+        // Clipboard unavailable (e.g. insecure context) — surface it.
+        setState("failed");
+        setTimeout(() => setState("idle"), 2500);
       }
     },
     [value],
@@ -51,8 +55,17 @@ export function CopyButton({ value, label, title, className }: CopyButtonProps) 
       ) : (
         <Copy className="size-3" />
       )}
-      <span className={cn(copied ? "text-health-good" : "")}>
-        {copied ? "Copied" : (label ?? value)}
+      <span
+        className={cn(
+          copied && "text-health-good",
+          state === "failed" && "text-health-warn",
+        )}
+      >
+        {copied
+          ? "Copied"
+          : state === "failed"
+            ? "Couldn't copy"
+            : (label ?? value)}
       </span>
     </button>
   );

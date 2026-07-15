@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
-import { Moon } from "lucide-react";
+import { Clock, Moon } from "lucide-react";
 
 import { formatDistance, formatDuration } from "@/lib/mapbox/directions";
 import type { RouteResult } from "@/lib/mapbox/directions";
@@ -9,6 +9,7 @@ import { MAPBOX_TOKEN } from "@/lib/mapbox/config";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { CopyButton } from "@/components/trip/copy-button";
+import { NavigateButton } from "@/components/trip/navigate-button";
 import { cn } from "@/lib/utils";
 import { formatCoordinate, formatCoordinatePlain } from "@/lib/coordinates";
 import {
@@ -294,11 +295,14 @@ export function DayByDayView({
   const stats = [
     { label: "Nights", value: String(totalNights) },
     { label: "Countries", value: String(countriesCount) },
-    { label: "Booked", value: `${bookingHealth.confirmed}/${bookingHealth.total}` },
+    {
+      label: "Camps booked",
+      value: `${bookingHealth.confirmed}/${bookingHealth.total}`,
+    },
     ...(totalStopCost
       ? [
           {
-            label: "Camp total",
+            label: "Est. total",
             value: `€${Math.round(totalStopCost).toLocaleString("en-GB")}`,
           },
         ]
@@ -333,17 +337,25 @@ export function DayByDayView({
             )}
           </p>
 
-          {/* Stat chips */}
-          <div className="mt-4 flex flex-wrap gap-2.5 print:gap-4">
+          <p className="mt-2 text-xs text-muted-foreground print:hidden">
+            Drive times:{" "}
+            <span className="text-health-good">under 4 h</span> comfortable ·{" "}
+            <span className="text-health-warn">4–5 h</span> long ·{" "}
+            <span className="text-health-bad-text">over 5 h</span> split if you
+            can.
+          </p>
+
+          {/* Stat tiles — even grid (no ragged wrap) */}
+          <div className="mt-4 grid grid-cols-3 gap-2.5 sm:grid-cols-6 print:flex print:flex-wrap print:gap-4">
             {stats.map((s) => (
               <div
                 key={s.label}
-                className="rounded-lg bg-white/[0.04] px-4 py-2.5 print:border print:border-slate-200 print:bg-white"
+                className="rounded-lg bg-white/[0.04] px-3 py-2.5 print:border print:border-slate-200 print:bg-white"
               >
                 <div className="font-display text-xl font-normal tabular-nums print:text-base">
                   {s.value}
                 </div>
-                <div className="text-[10px] uppercase tracking-wide text-muted-foreground">
+                <div className="mt-0.5 text-[11px] uppercase tracking-wide text-muted-foreground">
                   {s.label}
                 </div>
               </div>
@@ -556,11 +568,16 @@ function fmtCostShort(amount: number, currency: string | null): string {
 // ---- Sub-components -------------------------------------------------------
 
 function NextStopHero({ stop }: { stop: SupabaseStop }) {
+  const when =
+    stop.arrival_date &&
+    (stop.arrival_date.slice(0, 10) === todayKey()
+      ? "tonight"
+      : `arrives ${fmtShort(stop.arrival_date)}`);
   return (
     <div className="bg-contour relative mb-8 overflow-hidden rounded-xl border border-white/10 print:hidden">
       <div className="bg-card/85 p-4 backdrop-blur-[1px]">
-        <p className="coordinate text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
-          {countryFlag(stop.country)} Next stop · tonight
+        <p className="coordinate text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">
+          {countryFlag(stop.country)} Next stop{when ? ` · ${when}` : ""}
         </p>
         <h2 className="font-display mt-1 text-xl font-bold tracking-tight">
           {stop.name}
@@ -569,13 +586,15 @@ function NextStopHero({ stop }: { stop: SupabaseStop }) {
           <p className="text-sm text-muted-foreground">{stop.full_name}</p>
         )}
         <div className="mt-3 flex flex-wrap items-center gap-2">
-          <span className="coordinate text-xs text-muted-foreground">
-            {formatCoordinate(stop.lat, stop.lng)}
-          </span>
+          <NavigateButton
+            lat={stop.lat}
+            lng={stop.lng}
+            label={stop.full_name ?? stop.name}
+          />
           <CopyButton
             value={formatCoordinatePlain(stop.lat, stop.lng)}
-            label="Copy for satnav"
-            title="Copy coordinates for satnav"
+            label="Copy coordinates"
+            title="Copy coordinates"
           />
           {stop.booking_reference && (
             <CopyButton
@@ -664,13 +683,28 @@ function DriveRow({
             (routeLoading ? (
               <span className="h-4 w-24 shrink-0 animate-pulse rounded bg-muted" />
             ) : driveDuration > 0 ? (
-              <span
-                className={cn(
-                  "font-display shrink-0 text-sm font-bold tabular-nums",
-                  driveMetricClass,
+              <span className="flex shrink-0 items-center gap-1.5">
+                {driveHours >= 4 && (
+                  <span
+                    className={cn(
+                      "inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 text-[10px] font-semibold",
+                      driveHours >= 5
+                        ? "bg-health-bad/15 text-health-bad-text"
+                        : "bg-health-warn/15 text-health-warn",
+                    )}
+                  >
+                    <Clock className="size-3" /> Long drive
+                  </span>
                 )}
-              >
-                {formatDuration(driveDuration)} · {formatDistance(driveDistance)}
+                <span
+                  className={cn(
+                    "font-display text-sm font-bold tabular-nums",
+                    driveMetricClass,
+                  )}
+                >
+                  {formatDuration(driveDuration)} ·{" "}
+                  {formatDistance(driveDistance)}
+                </span>
               </span>
             ) : null)}
         </div>

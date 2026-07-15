@@ -66,7 +66,7 @@ export function StopWeather({
   if (loading) {
     return (
       <div>
-        <p className="coordinate mb-1.5 text-[11px] uppercase tracking-[0.14em] text-muted-foreground">
+        <p className="label mb-1.5 text-muted-foreground">
           Weather at arrival
         </p>
         <div className="h-14 animate-pulse rounded-lg bg-white/[0.04]" />
@@ -81,7 +81,7 @@ export function StopWeather({
 
   return (
     <div>
-      <p className="coordinate mb-1.5 text-[11px] uppercase tracking-[0.14em] text-muted-foreground">
+      <p className="label mb-1.5 text-muted-foreground">
         Weather at arrival
       </p>
       <div className="flex items-center gap-3 rounded-lg bg-white/[0.04] p-3">

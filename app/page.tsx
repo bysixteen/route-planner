@@ -75,8 +75,15 @@ function TripCard({ trip }: { trip: TripListItem }) {
               </p>
             )}
             <div className="flex gap-4">
-              {days && <span>{days} days</span>}
-              <span>{trip.stops?.[0]?.count || 0} stops</span>
+              {days != null && (
+                <span>
+                  {days} day{days === 1 ? "" : "s"}
+                </span>
+              )}
+              <span>
+                {trip.stops?.[0]?.count || 0}{" "}
+                {(trip.stops?.[0]?.count || 0) === 1 ? "stop" : "stops"}
+              </span>
             </div>
             {trip.vehicles && (
               <p className="text-xs">

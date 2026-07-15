@@ -12,6 +12,7 @@
   --color-highlight: var(--highlight);
   --color-highlight-foreground: var(--highlight-foreground);
   --color-volt-bright: var(--volt-bright);
+  --color-volt-tint: var(--volt-tint);
   --color-sage: var(--sage);
   --color-sage-deep: var(--sage-deep);
   --color-contour: var(--contour);
@@ -75,6 +76,7 @@
   --ink-dim: #8a9099;
   --volt: #3e6ae1;
   --volt-bright: #5b82ef;
+  --volt-tint: #8fb0ff; /* light volt — active chrome on volt-tinted fills (AA) */
   --alert: #e31937;
   --alert-text: #ff5a6e; /* AA-legible red for text on dark */
   --good: #2fbf71;
@@ -334,6 +336,15 @@
   font-family: var(--font-mono), ui-monospace, monospace;
   font-variant-numeric: tabular-nums;
   letter-spacing: 0.02em;
+}
+
+/* Eyebrow label — one canonical treatment for every section label. */
+.label {
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
 }
 
 /* Display type — Archivo, tight tracking, tabular figures */
