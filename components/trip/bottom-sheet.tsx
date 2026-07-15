@@ -11,7 +11,7 @@ const PEEK_PX = 132;
 const HALF_FRACTION = 0.52;
 const FULL_FRACTION = 0.92;
 // Clearance so the sheet rests above the floating dock (matches its height).
-const CLEARANCE = 76; // px — 4.75rem
+const CLEARANCE = 96; // px — dock pill (~52px) + its 1rem bottom gap + margin
 
 const clamp = (v: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, v));
 
@@ -118,31 +118,32 @@ export function BottomSheet({
     const d = drag.current;
     if (!d) return;
     const y = dragY ?? resting;
-    const target =
-      d.v > 0.6
-        ? step(detent, 1) // flick down → lower detent
-        : d.v < -0.6
-          ? step(detent, -1) // flick up → higher detent
-          : nearest(y);
+    // Snap to the nearest detent by position (so a long drag can cross more
+    // than one). If it barely moved but was a fast flick, nudge one detent in
+    // the fling direction (down = lower/peek, up = higher/full).
+    let target = nearest(y);
+    if (target === detent && Math.abs(d.v) > 0.6) {
+      target = step(detent, d.v > 0 ? -1 : 1);
+    }
     drag.current = null;
     setDragY(null);
     onDetentChange(target);
   };
 
   return (
+    // Wrapper is clipped and ends at the dock line (bottom: clearance), so the
+    // sheet never renders content behind the floating dock.
     <div
-      className="pointer-events-none fixed inset-x-0 bottom-0 z-20 md:hidden print:hidden"
-      style={{ height: vh || undefined }}
+      className="pointer-events-none fixed inset-x-0 z-20 overflow-hidden md:hidden print:hidden"
+      style={{ bottom: clearance, height: availH || undefined }}
     >
       <div
         data-detent={detent}
         className={cn(
-          "glass pointer-events-auto absolute inset-x-0 flex flex-col rounded-t-2xl border-t border-white/10",
+          "glass pointer-events-auto absolute inset-x-0 top-0 flex h-full flex-col rounded-t-2xl border-t border-white/10",
           detent === "full" && "bg-background/95",
         )}
         style={{
-          bottom: clearance,
-          height: availH || undefined,
           transform: `translateY(${translate}px)`,
           transition: dragY == null ? "transform 300ms ease-out" : "none",
         }}
@@ -164,10 +165,9 @@ export function BottomSheet({
         {/* Scrolling body */}
         <div
           ref={bodyRef}
-          className="scroll-fade min-h-0 flex-1 overflow-y-auto overscroll-contain"
+          className="scroll-fade min-h-0 flex-1 overflow-y-auto overscroll-contain pb-3"
         >
           {children}
-          <div style={{ height: "env(safe-area-inset-bottom)" }} />
         </div>
       </div>
     </div>

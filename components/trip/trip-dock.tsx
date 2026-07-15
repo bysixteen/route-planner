@@ -88,6 +88,7 @@ export function TripDock({
             key={key}
             type="button"
             onClick={() => onViewChange(key)}
+            aria-label={label}
             aria-pressed={view === key}
             className={cn(
               "focus-ring flex min-h-[44px] items-center gap-1.5 rounded-full px-3 text-sm font-medium transition-colors",
