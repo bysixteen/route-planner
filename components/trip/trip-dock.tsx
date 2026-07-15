@@ -6,7 +6,6 @@ import {
   CalendarDays,
   ChevronLeft,
   List,
-  Map as MapIcon,
   MoreHorizontal,
   Package,
   Printer,
@@ -15,7 +14,7 @@ import {
 
 import { cn } from "@/lib/utils";
 
-export type TripView = "cockpit" | "itinerary" | "map";
+export type TripView = "cockpit" | "itinerary";
 
 interface TripDockProps {
   view: TripView;
@@ -29,7 +28,6 @@ interface TripDockProps {
 const SEGMENTS: { key: TripView; label: string; icon: typeof List }[] = [
   { key: "cockpit", label: "Route", icon: List },
   { key: "itinerary", label: "Days", icon: CalendarDays },
-  { key: "map", label: "Map", icon: MapIcon },
 ];
 
 /**

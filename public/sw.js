@@ -1,6 +1,6 @@
 /* Route Planner service worker — runtime caching for offline road use.
  * Bump VERSION to invalidate old caches on deploy. */
-const VERSION = "v1";
+const VERSION = "v2";
 const RUNTIME = `runtime-${VERSION}`;
 
 self.addEventListener("install", () => self.skipWaiting());

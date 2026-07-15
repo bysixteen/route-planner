@@ -196,10 +196,10 @@ export default function TripPageClient() {
     [allLegs],
   );
 
-  // Mobile: the dock's Map/Cockpit toggle drives the sheet detent.
+  // Mobile: opening the Route view lifts the sheet off the peek state; the
+  // map is reached by dragging the sheet down to peek (no separate Map tab).
   useEffect(() => {
-    if (view === "map") setDetent("peek");
-    else if (view === "cockpit") setDetent((d) => (d === "peek" ? "half" : d));
+    if (view === "cockpit") setDetent((d) => (d === "peek" ? "half" : d));
   }, [view]);
 
   // The next upcoming overnight leg — the peek/half sheet's glanceable card.
