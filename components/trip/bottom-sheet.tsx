@@ -114,6 +114,63 @@ export function BottomSheet({
     onDetentChange(target);
   };
 
+  // Body drag — only engages when native scroll isn't in play, so the list
+  // still scrolls at half: drag DOWN at the top collapses; drag UP expands
+  // when the content doesn't overflow. Otherwise the body scrolls normally.
+  const bodyDrag = useRef<{
+    startY: number;
+    base: number;
+    committed: boolean;
+    atTop: boolean;
+    canScroll: boolean;
+    lastY: number;
+    lastT: number;
+    v: number;
+  } | null>(null);
+  const onBodyDown = (e: React.PointerEvent) => {
+    const el = bodyRef.current;
+    bodyDrag.current = {
+      startY: e.clientY,
+      base: heightFor(detent),
+      committed: false,
+      atTop: (el?.scrollTop ?? 0) <= 0,
+      canScroll: el ? el.scrollHeight > el.clientHeight + 1 : false,
+      lastY: e.clientY,
+      lastT: e.timeStamp,
+      v: 0,
+    };
+  };
+  const onBodyMove = (e: React.PointerEvent) => {
+    const d = bodyDrag.current;
+    if (!d) return;
+    const dy = e.clientY - d.startY;
+    if (!d.committed) {
+      const wantExpand = dy < -8 && detent !== "full" && !d.canScroll;
+      const wantCollapse = dy > 8 && d.atTop;
+      if (wantExpand || wantCollapse) {
+        d.committed = true;
+        (e.currentTarget as HTMLElement).setPointerCapture?.(e.pointerId);
+      } else return;
+    }
+    d.v = (e.clientY - d.lastY) / Math.max(1, e.timeStamp - d.lastT);
+    d.lastY = e.clientY;
+    d.lastT = e.timeStamp;
+    setDragH(clamp(d.base - dy, heightFor("peek"), heightFor("full")));
+  };
+  const onBodyUp = () => {
+    const d = bodyDrag.current;
+    if (d?.committed) {
+      const h = dragH ?? heightFor(detent);
+      let target = nearest(h);
+      if (target === detent && Math.abs(d.v) > 0.6) {
+        target = stepDetent(detent, d.v > 0 ? -1 : 1);
+      }
+      setDragH(null);
+      onDetentChange(target);
+    }
+    bodyDrag.current = null;
+  };
+
   return (
     <div
       data-detent={detent}
@@ -145,6 +202,10 @@ export function BottomSheet({
       {/* Scrolling body — padded so the last row clears the floating dock */}
       <div
         ref={bodyRef}
+        onPointerDown={onBodyDown}
+        onPointerMove={onBodyMove}
+        onPointerUp={onBodyUp}
+        onPointerCancel={onBodyUp}
         className="scroll-fade min-h-0 flex-1 overflow-y-auto overscroll-contain"
         style={{ paddingBottom: dockGap + 12 }}
       >

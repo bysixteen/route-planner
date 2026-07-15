@@ -2,7 +2,7 @@
 
 import { useMemo } from "react";
 import Link from "next/link";
-import { Clock, Moon, Package } from "lucide-react";
+import { Clock, MapPin, Moon, Package } from "lucide-react";
 
 import { formatDistance, formatDuration } from "@/lib/mapbox/directions";
 import type { RouteResult } from "@/lib/mapbox/directions";
@@ -47,6 +47,8 @@ export interface DayByDayProps {
   countriesCount: number;
   totalStopCost: number | null;
   bookingHealth: { confirmed: number; total: number };
+  /** Open a stop on the map (switches out of the itinerary overlay). */
+  onShowOnMap?: (stopIndex: number) => void;
 }
 
 // ---- Helpers ---------------------------------------------------------------
@@ -186,8 +188,11 @@ export function DayByDayView({
   countriesCount,
   totalStopCost,
   bookingHealth,
+  onShowOnMap,
 }: DayByDayProps) {
   const routeLoading = route === null;
+  const showOnMap = (stop: SupabaseStop) =>
+    onShowOnMap ? () => onShowOnMap(sortedStops.indexOf(stop)) : undefined;
 
   const dayEntries = useMemo((): DayEntry[] => {
     const entries: DayEntry[] = [];
@@ -321,7 +326,7 @@ export function DayByDayView({
       <div className="mx-auto max-w-3xl px-6 pb-28 pt-[calc(2rem+env(safe-area-inset-top))] print:px-4 print:py-4">
         {/* ── Trip header ─────────────────────────────────────────────── */}
         <div className="mb-6">
-          <p className="coordinate text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+          <p className="label text-muted-foreground">
             Route itinerary
           </p>
           <h1 className="font-display mt-1 text-3xl font-semibold tracking-tight print:text-2xl">
@@ -372,7 +377,9 @@ export function DayByDayView({
         </div>
 
         {/* ── Next stop / Tonight hero ─────────────────────────────────── */}
-        {nextStop && <NextStopHero stop={nextStop} />}
+        {nextStop && (
+          <NextStopHero stop={nextStop} onShowOnMap={showOnMap(nextStop)} />
+        )}
 
         {/* ── Payment balance ─────────────────────────────────────────── */}
         {totalStopCost != null && (
@@ -446,7 +453,12 @@ export function DayByDayView({
                 {entry.type === "rest" ? (
                   <RestRow entry={entry} isLast={isLast} />
                 ) : (
-                  <DriveRow entry={entry} isLast={isLast} routeLoading={routeLoading} />
+                  <DriveRow
+                    entry={entry}
+                    isLast={isLast}
+                    routeLoading={routeLoading}
+                    onShowOnMap={showOnMap(entry.stop)}
+                  />
                 )}
               </div>
             );
@@ -455,7 +467,7 @@ export function DayByDayView({
 
         {/* ── Van documents ────────────────────────────────────────────── */}
         <div className="mt-10 print:mt-8 print:break-before-page">
-          <p className="coordinate mb-1 text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+          <p className="label mb-1 text-muted-foreground">
             Documents
           </p>
           <h2 className="font-display mb-4 text-xl font-bold">
@@ -575,7 +587,13 @@ function fmtCostShort(amount: number, currency: string | null): string {
 
 // ---- Sub-components -------------------------------------------------------
 
-function NextStopHero({ stop }: { stop: SupabaseStop }) {
+function NextStopHero({
+  stop,
+  onShowOnMap,
+}: {
+  stop: SupabaseStop;
+  onShowOnMap?: () => void;
+}) {
   const when =
     stop.arrival_date &&
     (stop.arrival_date.slice(0, 10) === todayKey()
@@ -584,7 +602,7 @@ function NextStopHero({ stop }: { stop: SupabaseStop }) {
   return (
     <div className="bg-contour relative mb-8 overflow-hidden rounded-xl border border-white/10 print:hidden">
       <div className="bg-card/85 p-4 backdrop-blur-[1px]">
-        <p className="coordinate text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">
+        <p className="label text-muted-foreground">
           {countryFlag(stop.country)} Next stop{when ? ` · ${when}` : ""}
         </p>
         <h2 className="font-display mt-1 text-xl font-bold tracking-tight">
@@ -611,6 +629,15 @@ function NextStopHero({ stop }: { stop: SupabaseStop }) {
               className="font-mono"
             />
           )}
+          {onShowOnMap && (
+            <button
+              type="button"
+              onClick={onShowOnMap}
+              className="focus-ring inline-flex min-h-[44px] items-center gap-1.5 rounded-md px-2 text-xs font-medium text-volt-bright transition-colors hover:text-volt-tint"
+            >
+              <MapPin className="size-4" /> Show on map
+            </button>
+          )}
         </div>
       </div>
     </div>
@@ -621,7 +648,7 @@ function LegDivider({ label }: { label: string }) {
   return (
     <div className="flex items-center gap-3 py-4 print:py-3">
       <Separator className="flex-1" />
-      <span className="coordinate text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+      <span className="label font-bold text-muted-foreground">
         {label}
       </span>
       <Separator className="flex-1" />
@@ -633,10 +660,12 @@ function DriveRow({
   entry,
   isLast,
   routeLoading,
+  onShowOnMap,
 }: {
   entry: DayEntry;
   isLast: boolean;
   routeLoading: boolean;
+  onShowOnMap?: () => void;
 }) {
   const { stop, prevStop, waypoints, driveDuration, driveDistance, dayNumber, date } =
     entry;
@@ -716,6 +745,16 @@ function DriveRow({
               </span>
             ) : null)}
         </div>
+
+        {onShowOnMap && (
+          <button
+            type="button"
+            onClick={onShowOnMap}
+            className="focus-ring mb-2 inline-flex items-center gap-1.5 text-xs font-medium text-volt-bright transition-colors hover:text-volt-tint print:hidden"
+          >
+            <MapPin className="size-3.5" /> Show {stop.name} on map
+          </button>
+        )}
 
         {/* Drive from row */}
         {hasDrive && (

@@ -128,7 +128,7 @@ export default function HomePage() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="bg-contour min-h-[100dvh]">
       <header className="border-b border-white/5 pt-[env(safe-area-inset-top)]">
         <div className="container mx-auto flex items-center justify-between px-4 py-4">
           <Link
@@ -151,7 +151,7 @@ export default function HomePage() {
         </div>
       </header>
 
-      <main className="container mx-auto px-4 py-8">
+      <main className="mx-auto max-w-5xl px-4 py-8">
         {/* Contour hero — the one place the cartographic motif runs full-bleed */}
         <div className="bg-contour relative mb-8 overflow-hidden rounded-xl border p-6 sm:p-8">
           <span className="coordinate absolute right-4 top-3 hidden text-[11px] text-foreground/50 sm:block">

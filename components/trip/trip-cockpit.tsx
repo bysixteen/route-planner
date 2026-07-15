@@ -151,7 +151,7 @@ export function TripCockpit({
         )}
       >
         <div className="flex items-center justify-between">
-          <span className="coordinate text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+          <span className="label text-muted-foreground">
             Stops
           </span>
           <span className="font-display text-[11px] tabular-nums text-muted-foreground">
@@ -193,7 +193,7 @@ function Stat({
           {value}
         </div>
       )}
-      <div className="coordinate mt-2 text-[10px] uppercase tracking-[0.12em] text-muted-foreground">
+      <div className="label mt-2 text-muted-foreground">
         {label}
       </div>
     </div>

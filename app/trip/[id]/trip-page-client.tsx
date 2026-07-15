@@ -183,6 +183,19 @@ export default function TripPageClient() {
     [allLegs],
   );
 
+  // From the itinerary: open a stop on the map (always selects, never toggles).
+  const showStopOnMap = useCallback(
+    (index: number) => {
+      const leg = allLegs.find((l) => l.index === index);
+      if (!leg) return;
+      setSelectedLeg(leg);
+      setView("cockpit");
+      setDetent((d) => (d === "peek" ? "half" : d));
+      mapRef.current?.flyToStop(index);
+    },
+    [allLegs],
+  );
+
   // Mobile: the dock's Map/Cockpit toggle drives the sheet detent.
   useEffect(() => {
     if (view === "map") setDetent("peek");
@@ -486,6 +499,7 @@ export default function TripPageClient() {
             countriesCount={countriesCount}
             totalStopCost={totalStopCost}
             bookingHealth={bookingHealth}
+            onShowOnMap={showStopOnMap}
           />
         </div>
 
