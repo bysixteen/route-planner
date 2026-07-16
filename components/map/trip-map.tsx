@@ -320,7 +320,10 @@ export const TripMap = forwardRef<TripMapHandle, TripMapProps>(function TripMap(
         }
         const priceLine =
           s.dieselPrice != null
-            ? `<div class="pop-sub" style="color:var(--volt-tint);font-weight:600">Diesel €${s.dieselPrice.toFixed(2)}/L</div>`
+            ? `<div class="pop-sub" style="color:var(--volt-tint);font-weight:600">Diesel €${s.dieselPrice.toFixed(2)}/L</div>` +
+              (s.source === "LU"
+                ? `<div style="font-size:11px;color:var(--muted-foreground)">Luxembourg national fixed price</div>`
+                : "")
             : `<div class="pop-sub" style="color:var(--muted-foreground)">No live price here</div>`;
         const popup = new mapboxgl.Popup({ maxWidth: "220px", offset: 14 }).setHTML(
           `<div class="pop-title">${escHtml(s.name)}</div>` +

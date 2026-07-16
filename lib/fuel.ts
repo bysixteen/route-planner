@@ -49,6 +49,47 @@ export function pointInBox(
   return lat >= b[0] && lat <= b[2] && lng >= b[1] && lng <= b[3];
 }
 
+// Luxembourg is tiny and wedged between BE/DE/FR, so a bounding box catches a
+// strip of each neighbour — which wrongly stamped German Mosel stations with
+// LU's national price. This simplified border polygon ([lng, lat], tracing the
+// Our/Sûre/Moselle on the east) keeps the fixed price to actual LU territory.
+export const LU_POLYGON: [number, number][] = [
+  [6.02, 50.18],
+  [6.13, 50.05],
+  [6.24, 49.9],
+  [6.28, 49.87],
+  [6.5, 49.81],
+  [6.51, 49.72],
+  [6.51, 49.57],
+  [6.37, 49.47],
+  [6.1, 49.46],
+  [5.87, 49.5],
+  [5.79, 49.54],
+  [5.74, 49.62],
+  [5.87, 49.72],
+  [5.78, 49.85],
+  [5.86, 49.94],
+  [5.83, 50.06],
+  [5.98, 50.14],
+];
+
+export function pointInPolygon(
+  lat: number,
+  lng: number,
+  poly: [number, number][],
+): boolean {
+  let inside = false;
+  for (let i = 0, j = poly.length - 1; i < poly.length; j = i++) {
+    const [xi, yi] = poly[i];
+    const [xj, yj] = poly[j];
+    const intersect =
+      yi > lat !== yj > lat &&
+      lng < ((xj - xi) * (lat - yi)) / (yj - yi) + xi;
+    if (intersect) inside = !inside;
+  }
+  return inside;
+}
+
 /** Metres between two lat/lng points (haversine). */
 export function metresBetween(
   aLat: number,

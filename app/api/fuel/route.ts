@@ -3,8 +3,9 @@ import {
   boxesOverlap,
   COUNTRY_BOXES,
   LU_DIESEL_PRICE,
+  LU_POLYGON,
   metresBetween,
-  pointInBox,
+  pointInPolygon,
   type FuelStation,
 } from "@/lib/fuel";
 
@@ -158,7 +159,7 @@ async function fetchOsm(
   const out: FuelStation[] = [];
   for (const el of data.elements ?? []) {
     if (typeof el.lat !== "number" || typeof el.lon !== "number") continue;
-    const inLu = pointInBox(el.lat, el.lon, COUNTRY_BOXES.LU);
+    const inLu = pointInPolygon(el.lat, el.lon, LU_POLYGON);
     out.push({
       id: `osm-${el.id}`,
       name: el.tags?.name || el.tags?.brand || "Petrol station",
@@ -199,14 +200,17 @@ export async function GET(request: Request) {
     jobs.push(fetchGermany(s, w, n, e));
     attribution.push("Tankerkönig");
   }
-  if (boxesOverlap(bbox, COUNTRY_BOXES.LU)) {
-    attribution.push("STATEC (Luxembourg)");
-  }
 
   const settled = await Promise.allSettled(jobs);
   const results = settled.flatMap((r) =>
     r.status === "fulfilled" ? r.value : [],
   );
+
+  // Only credit Luxembourg's STATEC when an LU station was actually tagged
+  // (the polygon test, not the rough box) — avoids claiming it near the border.
+  if (results.some((r) => r.source === "LU")) {
+    attribution.push("STATEC (Luxembourg)");
+  }
 
   // Priced national stations win; drop OSM points within 130 m of one.
   const priced = results.filter((r) => r.source !== "OSM" && r.dieselPrice != null);
