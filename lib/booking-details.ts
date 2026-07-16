@@ -167,7 +167,7 @@ const BY_NAME: Record<string, BookingExtra> = {
   },
   // Camping Carpe Diem, Wildberg (booked) — 90 parcelled pitches
   Wildberg: {
-    payment: { note: "Balance due on arrival" },
+    payment: { paidInFull: true },
     address: "Martinshölzle 6-8, 72218 Wildberg, Germany",
     reminders: [
       "Awning policy isn't published — parcelled pitches, so confirm awning room with reception.",
