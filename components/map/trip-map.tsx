@@ -147,6 +147,10 @@ function midpointAlong(coords: [number, number][]): [number, number] {
 }
 
 
+// Persists across re-renders: station locations seen on previous fetches.
+// Used to show pump icons instantly while fresh prices load from the API.
+const fuelLocationCache = new Map<string, FuelStation>();
+
 export const TripMap = forwardRef<TripMapHandle, TripMapProps>(function TripMap({
   stops,
   options,
@@ -236,8 +240,7 @@ export const TripMap = forwardRef<TripMapHandle, TripMapProps>(function TripMap(
   const loadFuel = useCallback(async () => {
     const m = map.current;
     if (!m) return;
-    clearFuel();
-    if (!fuelOn) return;
+    if (!fuelOn) { clearFuel(); return; }
     if (m.getZoom() < 8.5) {
       setFuelZoomedOut(true);
       return;
@@ -245,12 +248,44 @@ export const TripMap = forwardRef<TripMapHandle, TripMapProps>(function TripMap(
     setFuelZoomedOut(false);
     const b = m.getBounds();
     if (!b) return;
+
+    // Phase 1 — show cached station positions immediately so the map never
+    // goes blank while prices are loading. Skip if markers are already visible
+    // (e.g. a pan within an area we already fetched).
+    if (fuelMarkersRef.current.length === 0) {
+      [...fuelLocationCache.values()]
+        .filter((s) => b.contains([s.lng, s.lat]))
+        .forEach((s) => {
+          try {
+            const el = iconEl(IconGasStation, fuelRootsRef.current, 14);
+            el.className = "map-disc map-disc--fuel";
+            const popup = new mapboxgl.Popup({ maxWidth: "220px", offset: 14 }).setHTML(
+              `<div class="pop-title">${escHtml(s.name)}</div>` +
+              `<div class="pop-sub" style="color:var(--muted-foreground)">Loading price…</div>` +
+              `<a href="${buildMapsUrl(s.lat, s.lng, s.name)}" target="_blank" rel="noopener noreferrer" style="display:inline-block;margin-top:6px;font-size:12px;font-weight:600;color:var(--volt-tint);text-decoration:none">Navigate →</a>`,
+            );
+            const marker = new mapboxgl.Marker({ element: el, anchor: "center" })
+              .setLngLat([s.lng, s.lat])
+              .setPopup(popup)
+              .addTo(m);
+            fuelMarkersRef.current.push(marker);
+          } catch { /* skip */ }
+        });
+    }
+
+    // Phase 2 — fetch fresh stations + live prices.
     const qs = `s=${b.getSouth().toFixed(4)}&w=${b.getWest().toFixed(4)}&n=${b.getNorth().toFixed(4)}&e=${b.getEast().toFixed(4)}`;
     try {
       const res = await fetch(`/api/fuel?${qs}`);
       if (!res.ok) return;
       const data: { stations: FuelStation[] } = await res.json();
       if (!map.current || !fuelOn) return;
+
+      // Update the location cache so future pans show positions instantly.
+      data.stations.forEach((s) => fuelLocationCache.set(s.id, s));
+
+      // Swap cached placeholders for the full priced set.
+      clearFuel();
 
       const priced = data.stations
         .filter((s) => s.dieselPrice != null)
@@ -305,7 +340,7 @@ export const TripMap = forwardRef<TripMapHandle, TripMapProps>(function TripMap(
       priced.forEach((s) => render(s, true));
       unpriced.forEach((s) => render(s, false));
     } catch {
-      /* proxy/feed unavailable — fail silent */
+      /* proxy/feed unavailable — cached placeholders remain visible */
     }
   }, [fuelOn, clearFuel]);
 
