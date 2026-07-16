@@ -50,6 +50,20 @@ export interface BookingExtra {
    */
   confirmed?: boolean;
   /**
+   * Payment progress, shown in the stop panel as "Paid in full" or
+   * "Paid X · Y outstanding". `total` defaults to the stop's `cost`,
+   * `currency` to the stop's currency. Set `paidInFull` for a simple
+   * fully-paid marker without needing figures.
+   */
+  payment?: {
+    total?: number;
+    paid?: number;
+    currency?: string;
+    paidInFull?: boolean;
+    /** Free-text override, e.g. "Deposit €20, balance on arrival". */
+    note?: string;
+  };
+  /**
    * Campsite service facilities (laundry, shop, bar, playground, etc.).
    * Curated from the campsite's own website — shown in the "Campsite facilities" widget.
    */

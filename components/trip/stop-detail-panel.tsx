@@ -19,6 +19,7 @@ import {
   countryFlag,
   formatCost,
   getBookingStatus,
+  getPaymentSummary,
   type DriveLeg,
 } from "@/lib/trip-detail";
 
@@ -93,6 +94,7 @@ export function StopDetailPanel({ leg, onClose, embedded }: StopDetailPanelProps
   const { stop, prevStop, minutes, distance } = leg;
   const booking = getBookingStatus(stop);
   const extra = getBookingExtraForStop(stop);
+  const payment = getPaymentSummary(stop);
   const facilities = detectFacilities(stop.notes, stop.amenities);
   const campsiteAmenities =
     extra?.campsiteAmenities ??
@@ -211,6 +213,7 @@ export function StopDetailPanel({ leg, onClose, embedded }: StopDetailPanelProps
         {(stop.booking_reference ||
           stop.cost != null ||
           stop.booking_url ||
+          payment ||
           (extra?.refs?.length ?? 0) > 0 ||
           extra?.siteInfoUrl) && (
           <div>
@@ -260,6 +263,25 @@ export function StopDetailPanel({ leg, onClose, embedded }: StopDetailPanelProps
                 </a>
               )}
             </div>
+            {payment && (
+              <p
+                className={cn(
+                  "mt-2 flex items-center gap-1.5 text-[13px] font-medium tabular-nums",
+                  payment.tone === "paid"
+                    ? "text-health-good"
+                    : "text-health-warn",
+                )}
+              >
+                <span
+                  aria-hidden
+                  className={cn(
+                    "size-1.5 rounded-full",
+                    payment.tone === "paid" ? "bg-health-good" : "bg-health-warn",
+                  )}
+                />
+                {payment.label}
+              </p>
+            )}
           </div>
         )}
 

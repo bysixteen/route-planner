@@ -145,6 +145,43 @@ export function formatCost(amount: number, currency: string | null): string {
   return `${symbol}${amount.toFixed(0)}`;
 }
 
+export interface PaymentSummary {
+  label: string;
+  /** "paid" = settled (green); "outstanding" = balance due (amber). */
+  tone: "paid" | "outstanding";
+}
+
+/**
+ * Payment progress for a stop, derived from its booking `payment` extra plus
+ * the stop's `cost`/`currency`. Returns null when no payment info is recorded.
+ */
+export function getPaymentSummary(stop: SupabaseStop): PaymentSummary | null {
+  const p = getBookingExtraForStop(stop)?.payment;
+  if (!p) return null;
+  const currency = p.currency ?? stop.currency;
+  const total = p.total ?? stop.cost ?? null;
+  const paid = p.paid ?? null;
+
+  if (p.paidInFull || (total != null && paid != null && paid >= total)) {
+    return { label: "Paid in full", tone: "paid" };
+  }
+  if (total != null && paid != null) {
+    const outstanding = Math.max(0, total - paid);
+    return {
+      label: `Paid ${formatCost(paid, currency)} · ${formatCost(outstanding, currency)} outstanding`,
+      tone: "outstanding",
+    };
+  }
+  if (p.note) return { label: p.note, tone: "outstanding" };
+  if (total != null) {
+    return {
+      label: `${formatCost(total, currency)} outstanding`,
+      tone: "outstanding",
+    };
+  }
+  return null;
+}
+
 /** True for a 0-night pass-through stop that isn't first or last. */
 export function isWaypoint(
   stop: SupabaseStop,
