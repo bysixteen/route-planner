@@ -85,8 +85,9 @@ const BY_REF: Record<string, BookingExtra> = {
 };
 
 const BY_NAME: Record<string, BookingExtra> = {
-  // Channel crossing — LeShuttle / Eurotunnel (Folkestone ⇄ Calais)
-  Folkestone: {
+  // Overnight before the outbound crossing — The Dog House, Smeeth (near the
+  // Folkestone LeShuttle / Eurotunnel terminal).
+  Smeeth: {
     refs: [{ label: "LeShuttle", value: "13449491" }],
     siteInfoUrl: "https://www.leshuttle.com",
     siteInfoLabel: "LeShuttle",
