@@ -83,6 +83,7 @@ export interface BookingExtra {
 const BY_REF: Record<string, BookingExtra> = {
   // Camping Memling, Bruges (18–20 Jul)
   RE792256C: {
+    payment: { paidInFull: true },
     address: "Veltemweg 109, 8310 Brugge, Belgium",
     checkIn: "12:00 – 23:00",
     checkOut: "07:00 – 11:30",
@@ -120,6 +121,7 @@ const BY_NAME: Record<string, BookingExtra> = {
   },
   // Château du Gandspette (Éperlecques) — last night before the return crossing
   Calais: {
+    payment: { paidInFull: true },
     address: "133 rue du Gandspette, 62910 Éperlecques, France",
     tolls: [
       {
@@ -146,6 +148,7 @@ const BY_NAME: Record<string, BookingExtra> = {
   },
   // Hungarian GP tickets
   Hungaroring: {
+    payment: { paidInFull: true },
     refs: [{ label: "F1 tickets", value: "F1HU653445" }],
     reminders: [
       "Tickets printed.",
@@ -154,6 +157,7 @@ const BY_NAME: Record<string, BookingExtra> = {
   },
   // Camping Bissen, Luxembourg (booked)
   Luxembourg: {
+    payment: { paidInFull: true },
     address: "11 Millewee, L-9659 Heiderscheidergrund, Luxembourg",
     reminders: [
       "Awning policy isn't published — worth confirming the pitch fits an awning with reception.",
@@ -163,6 +167,7 @@ const BY_NAME: Record<string, BookingExtra> = {
   },
   // Camping Carpe Diem, Wildberg (booked) — 90 parcelled pitches
   Wildberg: {
+    payment: { note: "Balance due on arrival" },
     address: "Martinshölzle 6-8, 72218 Wildberg, Germany",
     reminders: [
       "Awning policy isn't published — parcelled pitches, so confirm awning room with reception.",
@@ -182,6 +187,7 @@ const BY_NAME: Record<string, BookingExtra> = {
   },
   // Gerhardhof, Wildermieming (Ref 2026-034828) — booked "Stellplatz Transit"
   Wildermieming: {
+    payment: { paid: 18.09 },
     address: "Gerhardhof 1, 6413 Wildermieming, Austria",
     arrivalNote: "Gerhardhof 1, 6413 Wildermieming. Reception +43 5264 5240.",
     awning: "conditional",
@@ -210,6 +216,7 @@ const BY_NAME: Record<string, BookingExtra> = {
   },
   // Donaupark Camping Klosterneuburg (ÖAMTC) — 27–28 Jul, awning confirmed by site
   Klosterneuburg: {
+    payment: { paid: 0 },
     address: "In der Au 1, 3400 Klosterneuburg, Austria",
     checkIn: "From 12:00",
     arrivalNote:
@@ -235,6 +242,7 @@ const BY_NAME: Record<string, BookingExtra> = {
   },
   // Camping Gülser Moselbogen, Koblenz — large pitches with a paved awning area
   Koblenz: {
+    payment: { note: "Balance due on arrival" },
     address: "Am Gülser Moselbogen 20, 56072 Koblenz-Güls, Germany",
     awning: "yes",
     awningNote:
@@ -244,6 +252,7 @@ const BY_NAME: Record<string, BookingExtra> = {
   },
   // KNAUS Campingpark Nürnberg (booked)
   Nuremberg: {
+    payment: { paid: 38 },
     address: "Hans-Kalb-Straße 56, 90471 Nürnberg, Germany",
     reminders: [
       "Awning policy isn't published — confirm awning room for your pitch with reception.",

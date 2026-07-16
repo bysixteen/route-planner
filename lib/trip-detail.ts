@@ -165,7 +165,7 @@ export function getPaymentSummary(stop: SupabaseStop): PaymentSummary | null {
   if (p.paidInFull || (total != null && paid != null && paid >= total)) {
     return { label: "Paid in full", tone: "paid" };
   }
-  if (total != null && paid != null) {
+  if (total != null && paid != null && paid > 0) {
     const outstanding = Math.max(0, total - paid);
     return {
       label: `Paid ${formatCost(paid, currency)} · ${formatCost(outstanding, currency)} outstanding`,
