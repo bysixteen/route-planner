@@ -95,27 +95,37 @@ export default function PlanPage() {
     coordinates: [number, number];
     country?: string;
   }
+  const CANONICAL_HOME: HomeAddress = {
+    name: "16 Abelia Road",
+    fullName: "16 Abelia Road, Westhoughton, Bolton, BL5 2TB, United Kingdom",
+    coordinates: [-2.51434, 53.53734],
+    country: "United Kingdom",
+  };
+  const HOME_KEY = "routePlanner_homeAddress_v2";
   const [homeAddress, setHomeAddress] = useState<HomeAddress | null>(null);
   const [isSettingHome, setIsSettingHome] = useState(false);
 
-  // Load home address from localStorage on mount
+  // Load home address from localStorage on mount (v2 key ignores any stale v1 value)
   useEffect(() => {
-    const saved = localStorage.getItem("routePlanner_homeAddress");
+    const saved = localStorage.getItem(HOME_KEY);
     if (saved) {
       try {
         setHomeAddress(JSON.parse(saved));
+        return;
       } catch {
-        // Invalid JSON, ignore
+        // Invalid JSON, fall through to canonical
       }
     }
+    setHomeAddress(CANONICAL_HOME);
+    localStorage.setItem(HOME_KEY, JSON.stringify(CANONICAL_HOME));
   }, []);
 
   // Save home address to localStorage
   const saveHomeAddress = useCallback((address: HomeAddress) => {
     setHomeAddress(address);
-    localStorage.setItem("routePlanner_homeAddress", JSON.stringify(address));
+    localStorage.setItem(HOME_KEY, JSON.stringify(address));
     setIsSettingHome(false);
-  }, []);
+  }, [HOME_KEY]);
 
   // Start trip from home
   const handleStartFromHome = useCallback(() => {
@@ -397,6 +407,7 @@ export default function PlanPage() {
             <Input
               value={tripTitle}
               onChange={(e) => setTripTitle(e.target.value)}
+              aria-label="Trip title"
               className="w-64 border-none bg-transparent text-lg font-semibold focus-visible:ring-1"
             />
           </div>
@@ -766,7 +777,8 @@ export default function PlanPage() {
                                 <input
                                   type="text"
                                   placeholder="Add stop"
-                                  className="flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground/50"
+                                  aria-label="Add a stop"
+                                  className="flex-1 rounded bg-transparent text-sm outline-none placeholder:text-muted-foreground/50 focus-visible:ring-2 focus-visible:ring-ring"
                                   onFocus={() => {
                                     if (lastStopInDay) {
                                       setActiveInsertIndex(
