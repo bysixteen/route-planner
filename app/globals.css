@@ -1,13 +1,27 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 
-@custom-variant dark (&:is(.dark *));
-
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
+  --font-display: var(--font-manrope);
+
+  /* Brand extras — Tesla cockpit */
+  --color-highlight: var(--highlight);
+  --color-highlight-foreground: var(--highlight-foreground);
+  --color-volt: var(--volt);
+  --color-volt-bright: var(--volt-bright);
+  --color-volt-tint: var(--volt-tint);
+  --color-sage: var(--sage);
+  --color-sage-deep: var(--sage-deep);
+  --color-contour: var(--contour);
+  --color-health-good: var(--health-good);
+  --color-health-warn: var(--health-warn);
+  --color-health-bad: var(--health-bad);
+  --color-health-bad-text: var(--health-bad-text);
+
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
@@ -46,73 +60,76 @@
   --radius-4xl: calc(var(--radius) + 16px);
 }
 
+/*
+ * Tesla cockpit identity — dark only.
+ * Monochrome dark canvas · white ink · single volt-blue accent.
+ * Hierarchy carried by weight + elevation, not colour.
+ */
 :root {
-  --radius: 0.625rem;
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.145 0 0);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.145 0 0);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.205 0 0);
-  --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.97 0 0);
-  --secondary-foreground: oklch(0.205 0 0);
-  --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.556 0 0);
-  --accent: oklch(0.97 0 0);
-  --accent-foreground: oklch(0.205 0 0);
-  --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.922 0 0);
-  --input: oklch(0.922 0 0);
-  --ring: oklch(0.708 0 0);
-  --chart-1: oklch(0.646 0.222 41.116);
-  --chart-2: oklch(0.6 0.118 184.704);
-  --chart-3: oklch(0.398 0.07 227.392);
-  --chart-4: oklch(0.828 0.189 84.429);
-  --chart-5: oklch(0.769 0.188 70.08);
-  --sidebar: oklch(0.985 0 0);
-  --sidebar-foreground: oklch(0.145 0 0);
-  --sidebar-primary: oklch(0.205 0 0);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.97 0 0);
-  --sidebar-accent-foreground: oklch(0.205 0 0);
-  --sidebar-border: oklch(0.922 0 0);
-  --sidebar-ring: oklch(0.708 0 0);
-}
+  --radius: 0.875rem;
 
-.dark {
-  --background: oklch(0.145 0 0);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.205 0 0);
-  --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.205 0 0);
-  --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.922 0 0);
-  --primary-foreground: oklch(0.205 0 0);
-  --secondary: oklch(0.269 0 0);
-  --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.269 0 0);
-  --muted-foreground: oklch(0.708 0 0);
-  --accent: oklch(0.269 0 0);
-  --accent-foreground: oklch(0.985 0 0);
-  --destructive: oklch(0.704 0.191 22.216);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.556 0 0);
-  --chart-1: oklch(0.488 0.243 264.376);
-  --chart-2: oklch(0.696 0.17 162.48);
-  --chart-3: oklch(0.769 0.188 70.08);
-  --chart-4: oklch(0.627 0.265 303.9);
-  --chart-5: oklch(0.645 0.246 16.439);
-  --sidebar: oklch(0.205 0 0);
-  --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: oklch(0.488 0.243 264.376);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.269 0 0);
-  --sidebar-accent-foreground: oklch(0.985 0 0);
-  --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.556 0 0);
+  /* ── Primitives ───────────────────────────────────────── */
+  --void: #0b0c0e;
+  --panel: #16181b;
+  --panel-2: #1f2226;
+  --line: #2a2e33;
+  --ink: #f5f6f7;
+  --ink-dim: #8a9099;
+  --volt: #3e6ae1;
+  --volt-bright: #5b82ef;
+  --volt-tint: #8fb0ff; /* light volt — active chrome on volt-tinted fills (AA) */
+  --alert: #e31937;
+  --alert-text: #ff5a6e; /* AA-legible red for text on dark */
+  --good: #2fbf71;
+  --amber: #e8b23a;
+
+  /* ── Semantic (shadcn) ────────────────────────────────── */
+  --background: var(--void);
+  --foreground: var(--ink);
+  --card: var(--panel);
+  --card-foreground: var(--ink);
+  --popover: var(--panel);
+  --popover-foreground: var(--ink);
+  --primary: var(--volt);
+  --primary-foreground: #ffffff;
+  --secondary: var(--panel-2);
+  --secondary-foreground: var(--ink);
+  --muted: var(--panel-2);
+  --muted-foreground: var(--ink-dim);
+  --accent: var(--panel-2);
+  --accent-foreground: var(--ink);
+  --destructive: var(--alert);
+  --border: var(--line);
+  --input: var(--line);
+  --ring: var(--volt);
+
+  /* ── Brand extras ─────────────────────────────────────── */
+  --highlight: var(--volt);
+  --highlight-foreground: #ffffff;
+  --sage: var(--panel-2);
+  --sage-deep: var(--line);
+  --contour: rgba(255, 255, 255, 0.03);
+  --health-good: var(--good);
+  --health-warn: var(--amber);
+  --health-bad: var(--alert);
+  --health-bad-text: var(--alert-text);
+
+  /* ── Charts ───────────────────────────────────────────── */
+  --chart-1: var(--volt);
+  --chart-2: var(--good);
+  --chart-3: var(--amber);
+  --chart-4: var(--alert);
+  --chart-5: var(--ink-dim);
+
+  /* ── Sidebar ──────────────────────────────────────────── */
+  --sidebar: var(--panel);
+  --sidebar-foreground: var(--ink);
+  --sidebar-primary: var(--volt);
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: var(--panel-2);
+  --sidebar-accent-foreground: var(--ink);
+  --sidebar-border: var(--line);
+  --sidebar-ring: var(--volt);
 }
 
 @layer base {
@@ -122,21 +139,298 @@
   body {
     @apply bg-background text-foreground;
   }
+  /* Consistent keyboard focus for custom (non-shadcn) controls. */
+  .focus-ring:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 2px var(--background), 0 0 0 4px var(--ring);
+  }
 }
 
-/* Mapbox popup styling */
-.map-location-popup .mapboxgl-popup-content {
-  padding: 0;
-  border-radius: 0.5rem;
-  box-shadow: 0 10px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+/* Respect reduced-motion: neutralise transitions/animations. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }
 
-.map-location-popup .mapboxgl-popup-tip {
-  border-top-color: white;
+/* Mapbox popups — dark frosted glass, no tip (floats like a HUD card). */
+.mapboxgl-popup-content {
+  padding: 10px 12px !important;
+  border-radius: 12px !important;
+  background: color-mix(in srgb, var(--panel) 96%, transparent) !important;
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  color: var(--foreground) !important;
+  box-shadow: 0 16px 44px rgba(0, 0, 0, 0.55);
+  font-family: var(--font-sans), sans-serif;
 }
-
+.mapboxgl-popup-content strong {
+  font-family: var(--font-display), sans-serif;
+  font-weight: 600;
+}
+/* Popover as an aligned label/value HUD card (per fuel-price reference). */
+.pop-title {
+  font-family: var(--font-display), sans-serif;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.2;
+}
+.pop-sub {
+  color: var(--muted-foreground);
+  font-size: 11px;
+  margin-top: 2px;
+}
+.pop-rows {
+  margin-top: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.pop-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 24px;
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+.pop-row > span:first-child {
+  color: var(--muted-foreground);
+}
+.pop-drive {
+  margin-top: 8px;
+  padding-top: 7px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  font-size: 12px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+.mapboxgl-popup-tip {
+  display: none !important;
+}
 .mapboxgl-popup-close-button {
-  display: none;
+  color: var(--muted-foreground);
+  font-size: 18px;
+  padding: 0 6px;
+}
+.mapboxgl-popup-close-button:hover {
+  background: transparent;
+  color: var(--foreground);
+}
+
+/* Overlay markers: POI glyph discs + fuel price pills. */
+.map-disc {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 9999px;
+  background: rgba(11, 12, 14, 0.85);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  color: var(--ink, #f5f6f7);
+  cursor: pointer;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.6);
+}
+.map-disc--poi {
+  color: var(--volt-tint, #8fb0ff);
+}
+.map-disc--fuel {
+  color: var(--muted-foreground);
+  width: 22px;
+  height: 22px;
+}
+.fuel-pill {
+  display: flex;
+  align-items: center;
+  font-family: var(--font-mono, ui-monospace, monospace);
+  font-weight: 600;
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  padding: 2px 7px;
+  border-radius: 9999px;
+  white-space: nowrap;
+  cursor: pointer;
+  border: 1px solid transparent;
+  box-shadow: 0 2px 7px rgba(0, 0, 0, 0.55);
+}
+.fuel-pill--cheap {
+  background: var(--volt, #3e6ae1);
+  color: #0b0c0e;
+  border-color: var(--volt-bright, #5b82ef);
+}
+.fuel-pill--mid {
+  background: rgba(20, 22, 26, 0.94);
+  color: #e7e9ec;
+  border-color: rgba(255, 255, 255, 0.16);
+}
+.fuel-pill--dear {
+  background: rgba(20, 22, 26, 0.7);
+  color: rgba(231, 233, 236, 0.5);
+  border-color: rgba(255, 255, 255, 0.08);
+}
+/* Dark rounded-square map controls (Tesla-style). */
+.mapboxgl-ctrl-group {
+  background: color-mix(in srgb, var(--panel) 92%, transparent) !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  border-radius: 12px !important;
+  overflow: hidden;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45) !important;
+}
+.mapboxgl-ctrl-group button {
+  background: transparent !important;
+  width: 34px;
+  height: 34px;
+}
+.mapboxgl-ctrl-group button + button {
+  border-top: 1px solid rgba(255, 255, 255, 0.08) !important;
+}
+.mapboxgl-ctrl-group button .mapboxgl-ctrl-icon {
+  filter: invert(1);
+  opacity: 0.8;
+}
+.mapboxgl-ctrl-group button:hover {
+  background: rgba(255, 255, 255, 0.06) !important;
+}
+
+/* Keep controls + attribution clear of the rounded corners AND the iPhone
+ * safe areas (notch / Dynamic Island up top, home indicator at the bottom). */
+.mapboxgl-ctrl-top-right {
+  margin: calc(8px + env(safe-area-inset-top)) calc(8px + env(safe-area-inset-right))
+    0 0;
+}
+.mapboxgl-ctrl-bottom-right {
+  margin: 0 calc(8px + env(safe-area-inset-right))
+    calc(6px + env(safe-area-inset-bottom)) 0;
+}
+.mapboxgl-ctrl-bottom-left {
+  margin: 0 0 calc(6px + env(safe-area-inset-bottom))
+    calc(8px + env(safe-area-inset-left));
+}
+
+
+/* ── Motif: faint cockpit grid ────────────────────────────
+ * Tesla-style precision grid — used sparingly on hero panels. */
+.bg-contour {
+  background-color: var(--panel);
+  background-image:
+    linear-gradient(var(--contour) 1px, transparent 1px),
+    linear-gradient(90deg, var(--contour) 1px, transparent 1px);
+  background-size: 28px 28px;
+}
+
+/* Tesla-style panel — a solid near-black card over the map, flat (no
+ * sheen), only a whisper of blur so the map faintly reads behind it. */
+.glass {
+  background: color-mix(in srgb, var(--panel) 95%, transparent);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  border-color: rgba(255, 255, 255, 0.07);
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.55);
+}
+
+/* Dark tonal-elevation surfaces — separate regions by lightness, not
+ * borders (Material 3 dark elevation / Refactoring UI). */
+.surface-1 {
+  background: rgba(255, 255, 255, 0.04);
+}
+.surface-2 {
+  background: rgba(255, 255, 255, 0.07);
+}
+
+/* ── Scrollbars ───────────────────────────────────────────────
+ * WebKit/Chrome only (setting the standard scrollbar-color/width
+ * would disable these pseudo-elements). Thumb is hidden until the
+ * scroll area is hovered or focused, then fades in — dark-styled. */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: transparent;
+  border: 3px solid transparent;
+  background-clip: padding-box;
+  border-radius: 999px;
+  transition: background 0.2s ease;
+}
+:hover::-webkit-scrollbar-thumb,
+:focus-within::-webkit-scrollbar-thumb {
+  background: color-mix(in srgb, var(--ink-dim) 42%, transparent);
+  background-clip: padding-box;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: color-mix(in srgb, var(--ink-dim) 68%, transparent);
+  background-clip: padding-box;
+}
+::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
+/* Firefox fallback only — isolated so it never disables the WebKit
+ * pseudo-elements above in Chromium. */
+@supports (scrollbar-width: thin) and (not selector(::-webkit-scrollbar-thumb)) {
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: color-mix(in srgb, var(--ink-dim) 35%, transparent)
+      transparent;
+  }
+}
+
+/* ── Motif: coordinate readout (satnav target) ────────────── */
+.coordinate {
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.02em;
+}
+
+/* Eyebrow label — one canonical treatment for every section label. */
+.label {
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+/* Display type — Archivo, tight tracking, tabular figures */
+.font-display {
+  font-family: var(--font-display), var(--font-sans), sans-serif;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── Print ────────────────────────────────────────────────────
+ * The day-by-day itinerary is the printable document; it uses
+ * Tailwind print: utilities directly, so no global hide trick here. */
+@media print {
+  @page {
+    margin: 14mm;
+  }
+  /* Flip the cockpit dark theme to ink-on-paper for a legible printout. */
+  :root {
+    --background: #ffffff;
+    --foreground: #111318;
+    --card: #ffffff;
+    --card-foreground: #111318;
+    --muted: #f3f4f6;
+    --muted-foreground: #555b63;
+    --secondary: #f3f4f6;
+    --secondary-foreground: #111318;
+    --border: #d7dade;
+    --primary: #111318;
+    --primary-foreground: #ffffff;
+    --health-good: #177a3f;
+    --health-warn: #8a6300;
+    --health-bad: #b3001b;
+    --highlight: #2952c8;
+  }
 }
 
 @media print {

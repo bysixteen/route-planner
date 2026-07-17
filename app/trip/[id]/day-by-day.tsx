@@ -1,42 +1,31 @@
 "use client";
 
 import { useMemo } from "react";
+import { Clock, MapPin, Moon } from "lucide-react";
+
 import { formatDistance, formatDuration } from "@/lib/mapbox/directions";
 import type { RouteResult } from "@/lib/mapbox/directions";
 import { MAPBOX_TOKEN } from "@/lib/mapbox/config";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
+import { CopyButton } from "@/components/trip/copy-button";
+import { NavigateButton } from "@/components/trip/navigate-button";
+import { cn } from "@/lib/utils";
+import { formatCoordinate, formatCoordinatePlain } from "@/lib/coordinates";
+import {
+  BOOKABLE_TYPES,
+  countryFlag,
+  formatCost,
+  formatDate,
+  getBookingStatus,
+  todayKey,
+  type SupabaseStop,
+  type SupabaseTrip,
+} from "@/lib/trip-detail";
 
 // ---- Types ---------------------------------------------------------------
 
-type StopType = "campsite" | "city" | "attraction" | "rest" | "event" | "transport";
 type PaymentStatus = "confirmed" | "paid" | "on-arrival" | "outstanding" | "tbd";
-
-interface SupabaseStop {
-  id: string;
-  name: string;
-  full_name: string | null;
-  lat: number;
-  lng: number;
-  country: string | null;
-  type: StopType;
-  arrival_date: string | null;
-  departure_date: string | null;
-  nights: number;
-  notes: string | null;
-  position: number;
-  booking_reference: string | null;
-  booking_url: string | null;
-  cost: number | null;
-  currency: string | null;
-}
-
-interface TripData {
-  title: string;
-  start_date: string | null;
-  end_date: string | null;
-  vehicles: { name: string; make: string | null; model: string | null } | null;
-}
 
 interface DayEntry {
   type: "drive" | "rest";
@@ -50,25 +39,20 @@ interface DayEntry {
 }
 
 export interface DayByDayProps {
-  trip: TripData;
+  trip: SupabaseTrip;
   sortedStops: SupabaseStop[];
   route: RouteResult | null;
   totalNights: number;
   countriesCount: number;
   totalStopCost: number | null;
   bookingHealth: { confirmed: number; total: number };
+  /** Open a stop on the map (switches out of the itinerary overlay). */
+  onShowOnMap?: (stopIndex: number) => void;
+  /** Open the packing list (documents/vignettes are checked off there). */
+  onOpenPacking?: () => void;
 }
 
 // ---- Helpers ---------------------------------------------------------------
-
-function fmtDate(d: string | null): string {
-  if (!d) return "";
-  return new Date(d).toLocaleDateString("en-GB", {
-    day: "numeric",
-    month: "long",
-    year: "numeric",
-  });
-}
 
 function fmtDayFull(d: string | null): string {
   if (!d) return "—";
@@ -87,26 +71,29 @@ function fmtShort(d: string | null): string {
   });
 }
 
-function fmtCost(amount: number, currency: string | null): string {
-  const sym = currency === "GBP" ? "£" : currency === "HUF" ? "Ft " : "€";
-  return `${sym}${Math.round(amount).toLocaleString("en-GB")}`;
-}
-
-const BOOKABLE: ReadonlySet<StopType> = new Set(["campsite", "transport"]);
-
 function derivePaymentStatus(stop: SupabaseStop): PaymentStatus {
-  if (!BOOKABLE.has(stop.type)) return "tbd";
+  if (!BOOKABLE_TYPES.has(stop.type)) return "tbd";
   const notes = (stop.notes ?? "").toLowerCase();
-  if (stop.booking_reference) {
-    if (notes.includes("paid in full") || notes.includes("nothing outstanding") || notes.includes("✅ paid")) return "paid";
-    if (notes.includes("outstanding") || notes.includes("to pay") || notes.includes("due by")) return "outstanding";
+  if (getBookingStatus(stop) === "confirmed") {
+    if (
+      notes.includes("paid in full") ||
+      notes.includes("nothing outstanding") ||
+      notes.includes("✅ paid")
+    )
+      return "paid";
+    if (
+      notes.includes("outstanding") ||
+      notes.includes("to pay") ||
+      notes.includes("due by")
+    )
+      return "outstanding";
     return "confirmed";
   }
   if (stop.cost != null) return "on-arrival";
   return "tbd";
 }
 
-const STOP_LABEL: Record<StopType, string> = {
+const STOP_LABEL: Record<SupabaseStop["type"], string> = {
   campsite: "Campsite",
   city: "City",
   attraction: "Attraction",
@@ -115,13 +102,14 @@ const STOP_LABEL: Record<StopType, string> = {
   transport: "Transport",
 };
 
-const STOP_PIN_COLOUR: Record<StopType, string> = {
-  campsite: "16a34a",
-  event:    "dc2626",
-  city:     "2563eb",
-  transport:"475569",
-  rest:     "d97706",
-  attraction:"7c3aed",
+// Static-thumbnail pin colours (hex — Mapbox static API needs literals).
+const STOP_PIN_COLOUR: Record<SupabaseStop["type"], string> = {
+  campsite: "2fbf71",
+  event: "e31937",
+  city: "3e6ae1",
+  transport: "8a9099",
+  rest: "e8b23a",
+  attraction: "f5f6f7",
 };
 
 // ---- Static documents data -------------------------------------------------
@@ -134,7 +122,8 @@ const VIGNETTES = [
     cost: "€5.11",
     paid: "€5.11",
     due: "—",
-    notes: "Order ref 26179731153402 · Sticker posted — invoice email is valid proof if stopped. Calais/Éperlecques area has no active ZFE enforcement.",
+    notes:
+      "Order ref 26179731153402 · Sticker posted — invoice email is valid proof if stopped. Calais/Éperlecques area has no active ZFE enforcement.",
   },
   {
     name: "Umweltplakette",
@@ -143,7 +132,8 @@ const VIGNETTES = [
     cost: "~€6",
     paid: "—",
     due: "~€6",
-    notes: "Pick up at TÜV, DEKRA or local garage in Wildberg on 21 Jul. Green sticker (no. 4) goes on windscreen. Covers Nuremberg & Koblenz.",
+    notes:
+      "Pick up at TÜV, DEKRA or local garage in Wildberg on 21 Jul. Green sticker (no. 4) goes on windscreen. Covers Nuremberg & Koblenz.",
   },
   {
     name: "Motorway Vignette",
@@ -152,7 +142,8 @@ const VIGNETTES = [
     cost: "~€10",
     paid: "—",
     due: "~€10",
-    notes: "Buy at border petrol station on 22 Jul. 10-day sticker goes on windscreen.",
+    notes:
+      "Buy at border petrol station on 22 Jul. 10-day sticker goes on windscreen.",
   },
   {
     name: "e-Vignette (e-matrica)",
@@ -161,9 +152,32 @@ const VIGNETTES = [
     cost: "€37.19",
     paid: "€37.19",
     due: "—",
-    notes: "Order #2871283 · No. 222606282049151079910 · Valid 24 Jul – 2 Aug · D2 10-day · Plate: GB-DE75SXR · Fully electronic.",
+    notes:
+      "Order #2871283 · No. 222606282049151079910 · Valid 24 Jul – 2 Aug · D2 10-day · Plate: GB-DE75SXR · Fully electronic.",
   },
 ];
+
+// Road passes surfaced as a task on the day you cross into each country.
+const PASS_BY_COUNTRY: Record<string, { label: string; action: string }> = {
+  France: {
+    label: "Crit'Air LEZ sticker",
+    action: "Paper sticker on the windscreen — already sorted.",
+  },
+  Germany: {
+    label: "Umweltplakette · green LEZ sticker",
+    action:
+      "Pick up at a garage / DEKRA en route — needed for Nuremberg & Koblenz.",
+  },
+  Austria: {
+    label: "Motorway vignette",
+    action:
+      "Buy the digital vignette with immediate validity, or at the border petrol station.",
+  },
+  Hungary: {
+    label: "e-matrica · e-vignette",
+    action: "Digital only — buy online before the border. Already paid.",
+  },
+};
 
 // ---- Main component -------------------------------------------------------
 
@@ -175,7 +189,13 @@ export function DayByDayView({
   countriesCount,
   totalStopCost,
   bookingHealth,
+  onShowOnMap,
+  onOpenPacking,
 }: DayByDayProps) {
+  const routeLoading = route === null;
+  const showOnMap = (stop: SupabaseStop) =>
+    onShowOnMap ? () => onShowOnMap(sortedStops.indexOf(stop)) : undefined;
+
   const dayEntries = useMemo((): DayEntry[] => {
     const entries: DayEntry[] = [];
     let dayNum = 1;
@@ -186,9 +206,9 @@ export function DayByDayView({
     sortedStops.forEach((stop, index) => {
       const isFirst = index === 0;
       const isLast = index === sortedStops.length - 1;
-      const isWaypoint = stop.nights === 0 && !isFirst && !isLast;
+      const waypoint = stop.nights === 0 && !isFirst && !isLast;
 
-      if (isWaypoint) {
+      if (waypoint) {
         pendingWaypoints.push(stop);
         return;
       }
@@ -251,110 +271,161 @@ export function DayByDayView({
 
   const eventEntryIndex = dayEntries.findIndex((e) => e.stop.type === "event");
 
-  // Payment summary — split by confirmed bookings (pre-arranged) vs pay-on-site
+  // Next upcoming overnight stop (for the passenger's hero).
+  const nextStop = useMemo(() => {
+    const today = todayKey();
+    const overnight = dayEntries.filter(
+      (e) => e.type === "drive" && e.stop.nights > 0,
+    );
+    return (
+      overnight.find((e) => (e.date ?? "9999") >= today)?.stop ??
+      overnight[0]?.stop ??
+      null
+    );
+  }, [dayEntries]);
+
+  // Payment summary — confirmed (pre-arranged) vs pay-on-site.
   const bookableStops = useMemo(
-    () => sortedStops.filter((s) => BOOKABLE.has(s.type) && s.cost != null),
+    () => sortedStops.filter((s) => BOOKABLE_TYPES.has(s.type) && s.cost != null),
     [sortedStops],
   );
-
   const confirmedStops = useMemo(
-    () => bookableStops.filter((s) => s.booking_reference),
+    () => bookableStops.filter((s) => getBookingStatus(s) === "confirmed"),
     [bookableStops],
   );
-
   const payOnSiteStops = useMemo(
-    () => bookableStops.filter((s) => !s.booking_reference),
+    () => bookableStops.filter((s) => getBookingStatus(s) !== "confirmed"),
     [bookableStops],
   );
-
-  const confirmedTotal = useMemo(
-    () => confirmedStops.reduce((sum, s) => sum + (s.cost ?? 0), 0),
-    [confirmedStops],
-  );
-
-  const payOnSiteTotal = useMemo(
-    () => payOnSiteStops.reduce((sum, s) => sum + (s.cost ?? 0), 0),
-    [payOnSiteStops],
-  );
+  const confirmedTotal = confirmedStops.reduce((sum, s) => sum + (s.cost ?? 0), 0);
+  const payOnSiteTotal = payOnSiteStops.reduce((sum, s) => sum + (s.cost ?? 0), 0);
 
   const stats = [
     { label: "Nights", value: String(totalNights) },
     { label: "Countries", value: String(countriesCount) },
-    { label: "Booked", value: `${bookingHealth.confirmed}/${bookingHealth.total}` },
-    ...(totalStopCost ? [{ label: "Camp total", value: `€${Math.round(totalStopCost).toLocaleString("en-GB")}` }] : []),
-    ...(route ? [{ label: "Distance", value: formatDistance(route.totalDistance) }] : []),
-    ...(route ? [{ label: "Drive time", value: formatDuration(route.totalDuration) }] : []),
+    {
+      label: "Camps booked",
+      value: `${bookingHealth.confirmed}/${bookingHealth.total}`,
+    },
+    ...(totalStopCost
+      ? [
+          {
+            label: "Est. total",
+            value: `€${Math.round(totalStopCost).toLocaleString("en-GB")}`,
+          },
+        ]
+      : []),
+    ...(route
+      ? [{ label: "Distance", value: formatDistance(route.totalDistance) }]
+      : []),
+    ...(route
+      ? [{ label: "Drive time", value: formatDuration(route.totalDuration) }]
+      : []),
   ];
 
   return (
-    <div className="min-h-full bg-slate-50 text-slate-900 print:bg-white">
-      <div className="mx-auto max-w-3xl px-6 py-8 print:px-4 print:py-4">
-
+    <div className="min-h-full bg-background text-foreground print:bg-white">
+      <div className="mx-auto max-w-3xl px-6 pb-28 pt-[calc(2rem+env(safe-area-inset-top))] print:px-4 print:py-4">
         {/* ── Trip header ─────────────────────────────────────────────── */}
         <div className="mb-6">
-          <p className="font-mono text-xs font-semibold uppercase tracking-widest text-slate-400 print:text-slate-500">
+          <p className="label text-muted-foreground">
             Route itinerary
           </p>
-          <h1 className="mt-1 text-3xl font-black tracking-tight text-slate-900 print:text-2xl">
+          <h1 className="font-display mt-1 text-3xl font-semibold tracking-tight print:text-2xl">
             {trip.title}
           </h1>
-          <p className="mt-1 text-sm text-slate-500">
-            {fmtDate(trip.start_date)}
-            {trip.end_date && ` — ${fmtDate(trip.end_date)}`}
-            {trip.vehicles && <span className="font-medium text-slate-700"> · {trip.vehicles.name}</span>}
+          <p className="mt-1 text-sm text-muted-foreground">
+            {formatDate(trip.start_date)}
+            {trip.end_date && ` — ${formatDate(trip.end_date)}`}
+            {trip.vehicles && (
+              <span className="font-medium text-foreground">
+                {" "}
+                · {trip.vehicles.name}
+              </span>
+            )}
           </p>
 
-          {/* Stats strip */}
-          <div className="mt-4 flex flex-wrap gap-3 print:gap-4">
+          <p className="mt-3 text-xs text-muted-foreground print:hidden">
+            Drive times:{" "}
+            <span className="text-health-good">under 4 h</span> comfortable ·{" "}
+            <span className="text-health-warn">4–5 h</span> long ·{" "}
+            <span className="text-health-bad-text">over 5 h</span> split if you
+            can.
+          </p>
+
+          {/* Stat tiles — even grid (no ragged wrap) */}
+          <div className="mt-4 grid grid-cols-3 gap-2.5 sm:grid-cols-6 print:flex print:flex-wrap print:gap-4">
             {stats.map((s) => (
-              <div key={s.label} className="rounded-lg border border-slate-200 bg-white px-4 py-2.5 print:border-slate-300">
-                <div className="font-mono text-lg font-bold text-slate-900 print:text-base">{s.value}</div>
-                <div className="text-[10px] uppercase tracking-wide text-slate-400">{s.label}</div>
+              <div
+                key={s.label}
+                className="rounded-lg bg-white/[0.04] px-3 py-2.5 print:border print:border-slate-200 print:bg-white"
+              >
+                <div className="font-display text-xl font-normal tabular-nums print:text-base">
+                  {s.value}
+                </div>
+                <div className="mt-0.5 text-[11px] uppercase tracking-wide text-muted-foreground">
+                  {s.label}
+                </div>
               </div>
             ))}
           </div>
         </div>
 
+        {/* ── Next stop / Tonight hero ─────────────────────────────────── */}
+        {nextStop && (
+          <NextStopHero stop={nextStop} onShowOnMap={showOnMap(nextStop)} />
+        )}
+
         {/* ── Payment balance ─────────────────────────────────────────── */}
         {totalStopCost != null && (
-          <div className="mb-8 overflow-hidden rounded-xl border border-slate-200 bg-white print:mb-6 print:break-inside-avoid">
-            <div className="border-b border-slate-100 px-4 py-3">
-              <p className="text-xs font-semibold uppercase tracking-widest text-slate-400">
+          <div className="mb-8 overflow-hidden rounded-xl bg-white/[0.03] print:mb-6 print:break-inside-avoid print:border print:border-slate-200 print:bg-white">
+            <div className="px-4 pb-1 pt-3">
+              <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
                 Accommodation · Payment balance
               </p>
             </div>
-            <div className="grid grid-cols-2 divide-x divide-slate-100">
+            <div className="grid grid-cols-2">
               <div className="px-4 py-4">
-                <p className="font-mono text-2xl font-bold text-slate-900 print:text-xl">
+                <p className="font-display text-2xl font-normal tabular-nums print:text-xl">
                   €{Math.round(confirmedTotal).toLocaleString("en-GB")}
                 </p>
-                <p className="mt-0.5 text-xs font-semibold uppercase tracking-wide text-slate-400">
+                <p className="mt-0.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                   Booked &amp; arranged
                 </p>
                 {confirmedStops.length > 0 && (
                   <div className="mt-2 flex flex-wrap gap-1.5">
                     {confirmedStops.map((s) => (
-                      <span key={s.id} className="inline-flex items-center gap-1 rounded-full border border-slate-200 bg-slate-50 px-2 py-0.5 text-xs text-slate-600">
+                      <span
+                        key={s.id}
+                        className="inline-flex items-center gap-1 rounded-full bg-white/[0.06] px-2 py-0.5 text-xs text-muted-foreground"
+                      >
                         {s.name}
-                        <span className="font-mono font-bold text-slate-800">{fmtCost(s.cost!, s.currency)}</span>
+                        <span className="font-mono font-bold text-foreground">
+                          {fmtCostShort(s.cost!, s.currency)}
+                        </span>
                       </span>
                     ))}
                   </div>
                 )}
               </div>
               <div className="px-4 py-4">
-                <p className="font-mono text-2xl font-bold text-amber-600 print:text-xl">
+                <p className="font-display text-2xl font-normal tabular-nums text-health-warn print:text-xl">
                   €{Math.round(payOnSiteTotal).toLocaleString("en-GB")}
                 </p>
-                <p className="mt-0.5 text-xs font-semibold uppercase tracking-wide text-slate-400">
+                <p className="mt-0.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                   Pay on site / arrival
                 </p>
                 {payOnSiteStops.length > 0 && (
                   <div className="mt-2 flex flex-wrap gap-1.5">
                     {payOnSiteStops.map((s) => (
-                      <span key={s.id} className="inline-flex items-center gap-1 rounded-full border border-amber-200 bg-amber-50 px-2 py-0.5 text-xs text-amber-700">
+                      <span
+                        key={s.id}
+                        className="inline-flex items-center gap-1 rounded-full border border-health-warn/40 bg-health-warn/10 px-2 py-0.5 text-xs text-health-warn"
+                      >
                         {s.name}
-                        <span className="font-mono font-bold">{fmtCost(s.cost!, s.currency)}</span>
+                        <span className="font-mono font-bold">
+                          {fmtCostShort(s.cost!, s.currency)}
+                        </span>
                       </span>
                     ))}
                   </div>
@@ -370,16 +441,19 @@ export function DayByDayView({
             const isLast = i === dayEntries.length - 1;
             return (
               <div key={`${entry.stop.id}-${entry.dayNumber}`}>
-                {i === 0 && eventEntryIndex >= 0 && (
-                  <LegDivider label="Outbound" />
-                )}
+                {i === 0 && eventEntryIndex >= 0 && <LegDivider label="Outbound" />}
                 {i === eventEntryIndex + 1 && eventEntryIndex >= 0 && (
                   <LegDivider label="Return" />
                 )}
                 {entry.type === "rest" ? (
                   <RestRow entry={entry} isLast={isLast} />
                 ) : (
-                  <DriveRow entry={entry} isLast={isLast} />
+                  <DriveRow
+                    entry={entry}
+                    isLast={isLast}
+                    routeLoading={routeLoading}
+                    onShowOnMap={showOnMap(entry.stop)}
+                  />
                 )}
               </div>
             );
@@ -388,76 +462,111 @@ export function DayByDayView({
 
         {/* ── Van documents ────────────────────────────────────────────── */}
         <div className="mt-10 print:mt-8 print:break-before-page">
-          <p className="mb-1 font-mono text-xs font-semibold uppercase tracking-widest text-slate-400">
+          <p className="label mb-1 text-muted-foreground">
             Documents
           </p>
-          <h2 className="mb-4 text-xl font-bold text-slate-900">
-            Van Documents &amp; Vignettes
-          </h2>
+          <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
+            <h2 className="font-display text-xl font-bold">
+              Van Documents &amp; Vignettes
+            </h2>
+            {onOpenPacking && (
+              <button
+                type="button"
+                onClick={onOpenPacking}
+                className="focus-ring inline-flex items-center gap-1.5 rounded-lg surface-2 px-3 py-1.5 text-sm font-medium text-foreground transition-colors hover:text-volt-tint print:hidden"
+              >
+                Tick off in Pack →
+              </button>
+            )}
+          </div>
 
-          {/* Mobile-friendly stacked cards */}
+          {/* Mobile stacked cards */}
           <div className="space-y-3 sm:hidden">
             {VIGNETTES.map((v) => (
               <div
                 key={v.name}
-                className="overflow-hidden rounded-xl border border-slate-200 bg-white"
+                className="overflow-hidden rounded-xl bg-white/[0.03] print:border print:border-slate-200 print:bg-white"
               >
-                <div className="flex items-center justify-between gap-3 border-b border-slate-100 px-4 py-3">
+                <div className="flex items-center justify-between gap-3 px-4 pb-1 pt-3">
                   <div>
-                    <p className="font-semibold text-slate-900">{v.name}</p>
-                    <p className="text-xs text-slate-500">{v.country}</p>
+                    <p className="font-semibold">{v.name}</p>
+                    <p className="text-xs text-muted-foreground">{v.country}</p>
                   </div>
                   <VignetteStatusBadge status={v.status} />
                 </div>
-                <div className="grid grid-cols-2 divide-x divide-slate-100 border-b border-slate-100">
+                <div className="grid grid-cols-2">
                   <div className="px-3 py-2">
-                    <p className="font-mono text-sm font-bold text-green-600">{v.paid}</p>
-                    <p className="text-[10px] uppercase tracking-wide text-slate-400">Paid</p>
+                    <p className="font-mono text-sm font-bold text-health-good">
+                      {v.paid}
+                    </p>
+                    <p className="text-[10px] uppercase tracking-wide text-muted-foreground">
+                      Paid
+                    </p>
                   </div>
                   <div className="px-3 py-2">
-                    <p className={`font-mono text-sm font-bold ${v.due === "—" ? "text-slate-300" : "text-amber-600"}`}>{v.due}</p>
-                    <p className="text-[10px] uppercase tracking-wide text-slate-400">Due</p>
+                    <p
+                      className={cn(
+                        "font-mono text-sm font-bold",
+                        v.due === "—"
+                          ? "text-muted-foreground/40"
+                          : "text-health-warn",
+                      )}
+                    >
+                      {v.due}
+                    </p>
+                    <p className="text-[10px] uppercase tracking-wide text-muted-foreground">
+                      Due
+                    </p>
                   </div>
                 </div>
-                <div className="px-4 py-3 text-xs leading-relaxed text-slate-500">{v.notes}</div>
+                <div className="px-4 py-3 text-xs leading-relaxed text-muted-foreground">
+                  {v.notes}
+                </div>
               </div>
             ))}
           </div>
 
           {/* Desktop table */}
-          <div className="hidden overflow-hidden rounded-xl border border-slate-200 bg-white sm:block print:block print:rounded-none">
+          <div className="hidden overflow-hidden rounded-xl bg-white/[0.03] sm:block print:block print:rounded-none print:border print:border-slate-200 print:bg-white">
             <table className="w-full text-sm">
-              <thead className="border-b border-slate-100 bg-slate-50 print:bg-slate-100">
+              <thead className="bg-white/[0.03] print:bg-slate-50">
                 <tr>
                   {["Item", "Country", "Status", "Paid", "Due", "Notes"].map((h) => (
                     <th
                       key={h}
-                      className="px-3 py-2.5 text-left text-[10px] font-bold uppercase tracking-widest text-slate-400"
+                      className="px-3 py-2.5 text-left text-[10px] font-bold uppercase tracking-widest text-muted-foreground"
                     >
                       {h}
                     </th>
                   ))}
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100">
+              <tbody className="divide-y divide-white/5 print:divide-slate-200">
                 {VIGNETTES.map((v) => (
                   <tr key={v.name} className="align-top">
-                    <td className="whitespace-nowrap px-3 py-3 font-semibold text-slate-900">
+                    <td className="whitespace-nowrap px-3 py-3 font-semibold">
                       {v.name}
                     </td>
-                    <td className="whitespace-nowrap px-3 py-3 text-slate-600">
+                    <td className="whitespace-nowrap px-3 py-3 text-muted-foreground">
                       {v.country}
                     </td>
                     <td className="whitespace-nowrap px-3 py-3">
                       <VignetteStatusBadge status={v.status} />
                     </td>
-                    <td className="whitespace-nowrap px-3 py-3 font-mono font-bold text-green-600">
+                    <td className="whitespace-nowrap px-3 py-3 font-mono font-bold text-health-good">
                       {v.paid}
                     </td>
-                    <td className={`whitespace-nowrap px-3 py-3 font-mono font-bold ${v.due === "—" ? "text-slate-300" : "text-amber-600"}`}>
+                    <td
+                      className={cn(
+                        "whitespace-nowrap px-3 py-3 font-mono font-bold",
+                        v.due === "—"
+                          ? "text-muted-foreground/40"
+                          : "text-health-warn",
+                      )}
+                    >
                       {v.due}
                     </td>
-                    <td className="px-3 py-3 text-xs leading-relaxed text-slate-500">
+                    <td className="px-3 py-3 text-xs leading-relaxed text-muted-foreground">
                       {v.notes}
                     </td>
                   </tr>
@@ -468,7 +577,7 @@ export function DayByDayView({
         </div>
 
         {/* Print footer */}
-        <p className="mt-8 hidden text-center font-mono text-[10px] uppercase tracking-widest text-slate-300 print:block">
+        <p className="coordinate mt-8 hidden text-center text-[10px] uppercase tracking-widest text-muted-foreground print:block">
           {trip.title} · Route Planner
         </p>
       </div>
@@ -476,13 +585,76 @@ export function DayByDayView({
   );
 }
 
+// Compact cost (no decimals) for inline chips.
+function fmtCostShort(amount: number, currency: string | null): string {
+  const sym = currency === "GBP" ? "£" : currency === "HUF" ? "Ft " : "€";
+  return `${sym}${Math.round(amount).toLocaleString("en-GB")}`;
+}
+
 // ---- Sub-components -------------------------------------------------------
+
+function NextStopHero({
+  stop,
+  onShowOnMap,
+}: {
+  stop: SupabaseStop;
+  onShowOnMap?: () => void;
+}) {
+  const when =
+    stop.arrival_date &&
+    (stop.arrival_date.slice(0, 10) === todayKey()
+      ? "tonight"
+      : `arrives ${fmtShort(stop.arrival_date)}`);
+  return (
+    <div className="bg-contour relative mb-8 overflow-hidden rounded-xl border border-white/10 print:hidden">
+      <div className="bg-card/85 p-4 backdrop-blur-[1px]">
+        <p className="label text-muted-foreground">
+          {countryFlag(stop.country)} Next stop{when ? ` · ${when}` : ""}
+        </p>
+        <h2 className="font-display mt-1 text-xl font-bold tracking-tight">
+          {stop.name}
+        </h2>
+        {stop.full_name && stop.full_name !== stop.name && (
+          <p className="text-sm text-muted-foreground">{stop.full_name}</p>
+        )}
+        <div className="mt-3 flex flex-wrap items-center gap-2">
+          <NavigateButton
+            lat={stop.lat}
+            lng={stop.lng}
+            label={stop.full_name ?? stop.name}
+          />
+          <CopyButton
+            value={formatCoordinatePlain(stop.lat, stop.lng)}
+            label="Copy coordinates"
+            title="Copy coordinates"
+          />
+          {stop.booking_reference && (
+            <CopyButton
+              value={stop.booking_reference}
+              title="Copy booking reference"
+              className="font-mono"
+            />
+          )}
+          {onShowOnMap && (
+            <button
+              type="button"
+              onClick={onShowOnMap}
+              className="focus-ring inline-flex min-h-[44px] items-center gap-1.5 rounded-md px-2 text-xs font-medium text-volt-bright transition-colors hover:text-volt-tint"
+            >
+              <MapPin className="size-4" /> Show on map
+            </button>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
 
 function LegDivider({ label }: { label: string }) {
   return (
     <div className="flex items-center gap-3 py-4 print:py-3">
       <Separator className="flex-1" />
-      <span className="font-mono text-[10px] font-bold uppercase tracking-widest text-slate-400">
+      <span className="label font-bold text-muted-foreground">
         {label}
       </span>
       <Separator className="flex-1" />
@@ -490,108 +662,189 @@ function LegDivider({ label }: { label: string }) {
   );
 }
 
-function DriveRow({ entry, isLast }: { entry: DayEntry; isLast: boolean }) {
-  const { stop, prevStop, waypoints, driveDuration, driveDistance, dayNumber, date } = entry;
-  const hasDrive = prevStop !== null && driveDuration > 0;
+function DriveRow({
+  entry,
+  isLast,
+  routeLoading,
+  onShowOnMap,
+}: {
+  entry: DayEntry;
+  isLast: boolean;
+  routeLoading: boolean;
+  onShowOnMap?: () => void;
+}) {
+  const { stop, prevStop, waypoints, driveDuration, driveDistance, dayNumber, date } =
+    entry;
+  const hasDrive = prevStop !== null;
   const isEvent = stop.type === "event";
+  const enteringCountry =
+    prevStop && stop.country && stop.country !== prevStop.country
+      ? stop.country
+      : null;
+  const pass = enteringCountry ? PASS_BY_COUNTRY[enteringCountry] : null;
   const paymentStatus = derivePaymentStatus(stop);
+  const isOvernight = stop.nights > 0 || stop.type === "campsite";
 
   const driveHours = driveDuration / 3600;
   const driveMetricClass =
-    driveHours === 0 ? "text-slate-400" :
-    driveHours < 4 ? "text-green-600" :
-    driveHours < 5 ? "text-amber-600" : "text-red-600";
+    driveHours < 4
+      ? "text-health-good"
+      : driveHours < 5
+        ? "text-health-warn"
+        : "text-health-bad-text";
 
   return (
     <div className="flex gap-0 print:break-inside-avoid">
       {/* Timeline spine */}
-      <div className="flex w-14 shrink-0 flex-col items-center print:w-12">
+      <div className="flex w-10 shrink-0 flex-col items-center sm:w-14 print:w-12">
         <div
-          className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full font-mono text-xs font-bold text-white shadow-sm print:shadow-none ${
-            isEvent ? "bg-red-600" : "bg-slate-900"
-          }`}
+          className={cn(
+            "font-display flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-xs font-semibold tabular-nums shadow-sm print:shadow-none",
+            isEvent
+              ? "bg-health-bad text-white"
+              : "border border-border bg-secondary text-muted-foreground",
+          )}
         >
           {String(dayNumber).padStart(2, "0")}
         </div>
-        {!isLast && (
-          <div className="min-h-8 w-px flex-1 bg-slate-200 print:bg-slate-300" />
-        )}
+        {!isLast && <div className="min-h-8 w-px flex-1 bg-border print:bg-border" />}
       </div>
 
       {/* Content */}
       <div className="min-w-0 flex-1 pb-5 pr-0">
         {/* Day label + drive metric */}
         <div className="mb-2 flex items-baseline justify-between gap-2 pt-1.5">
-          <span className="text-sm font-semibold text-slate-700">
+          <span className="text-sm font-semibold">
             {fmtDayFull(date)}
             {isEvent && (
-              <span className="ml-2 font-mono text-[10px] font-bold uppercase tracking-wide text-red-500">
+              <span className="coordinate ml-2 text-[10px] font-bold uppercase tracking-wide text-health-bad-text">
                 Race weekend
               </span>
             )}
           </span>
-          {hasDrive && (
-            <span className={`shrink-0 font-mono text-sm font-bold ${driveMetricClass}`}>
-              {formatDuration(driveDuration)} · {formatDistance(driveDistance)}
-            </span>
-          )}
+          {hasDrive &&
+            (routeLoading ? (
+              <span className="h-4 w-24 shrink-0 animate-pulse rounded bg-muted" />
+            ) : driveDuration > 0 ? (
+              <span className="flex shrink-0 items-center gap-1.5">
+                {driveHours >= 4 && (
+                  <span
+                    className={cn(
+                      "inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 text-[10px] font-semibold",
+                      driveHours >= 5
+                        ? "bg-health-bad/15 text-health-bad-text"
+                        : "bg-health-warn/15 text-health-warn",
+                    )}
+                  >
+                    <Clock className="size-3" /> Long drive
+                  </span>
+                )}
+                <span
+                  className={cn(
+                    "font-display text-sm font-bold tabular-nums",
+                    driveMetricClass,
+                  )}
+                >
+                  {formatDuration(driveDuration)} ·{" "}
+                  {formatDistance(driveDistance)}
+                </span>
+              </span>
+            ) : null)}
         </div>
+
+        {onShowOnMap && (
+          <button
+            type="button"
+            onClick={onShowOnMap}
+            className="focus-ring mb-2 inline-flex items-center gap-1.5 text-xs font-medium text-volt-bright transition-colors hover:text-volt-tint print:hidden"
+          >
+            <MapPin className="size-3.5" /> Show {stop.name} on map
+          </button>
+        )}
 
         {/* Drive from row */}
         {hasDrive && (
-          <div className="mb-3 flex items-center gap-1.5 text-xs text-slate-500">
-            <span className="font-mono text-slate-400">→</span>
+          <div className="mb-3 flex flex-wrap items-center gap-1.5 text-xs text-muted-foreground">
+            <span className="font-mono text-muted-foreground/60">→</span>
             <span>from</span>
-            <span className="font-medium text-slate-700">{prevStop?.name}</span>
+            <span className="font-medium text-foreground">{prevStop?.name}</span>
             {prevStop?.country && (
-              <span className="text-slate-400">· {prevStop.country}</span>
+              <span className="text-muted-foreground">· {prevStop.country}</span>
             )}
             {waypoints.length > 0 && (
-              <span className="text-slate-400">via {waypoints.map((w) => w.name).join(", ")}</span>
+              <span className="text-muted-foreground">
+                via {waypoints.map((w) => w.name).join(", ")}
+              </span>
             )}
+          </div>
+        )}
+
+        {/* Border task — road pass for the country being entered */}
+        {pass && (
+          <div className="mb-3 flex items-start gap-2 rounded-lg bg-white/[0.04] px-3 py-2 text-[11px] print:border print:border-slate-300 print:bg-transparent">
+            <span aria-hidden="true">🛂</span>
+            <div>
+              <span className="font-medium">
+                Entering {enteringCountry} · {pass.label}
+              </span>{" "}
+              <span className="text-muted-foreground">— {pass.action}</span>
+            </div>
           </div>
         )}
 
         {/* Stop card */}
         <div
-          className={`overflow-hidden rounded-xl border bg-white shadow-sm print:shadow-none ${
-            isEvent ? "border-red-200" : "border-slate-200"
-          }`}
+          className={cn(
+            "overflow-hidden rounded-xl bg-white/[0.03] print:border print:border-slate-200 print:bg-white",
+            isEvent && "bg-health-bad/[0.06]",
+          )}
         >
-          {/* Static map thumbnail */}
           <StopMapThumb stop={stop} />
 
           {/* Card header */}
-          <div className={`px-4 py-3 ${isEvent ? "bg-red-50" : "bg-white"}`}>
+          <div className={cn("px-4 py-3", isEvent && "bg-health-bad/5")}>
             <div className="flex items-start justify-between gap-3">
               <div className="min-w-0 flex-1">
                 <div className="flex flex-wrap items-center gap-2">
-                  <span className="font-semibold text-slate-900">{stop.name}</span>
+                  <span className="font-display font-semibold">{stop.name}</span>
                   <Badge variant="secondary" className="text-[10px] font-medium">
                     {STOP_LABEL[stop.type]}
                   </Badge>
                 </div>
                 {stop.full_name && stop.full_name !== stop.name && (
-                  <p className="mt-0.5 text-xs text-slate-500">{stop.full_name}</p>
+                  <p className="mt-0.5 text-xs text-muted-foreground">
+                    {stop.full_name}
+                  </p>
                 )}
-                {stop.country && (
-                  <p className="mt-0.5 font-mono text-[11px] text-slate-400">{stop.country}</p>
+                {/* Coordinate readout + satnav copy */}
+                {isOvernight && (
+                  <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
+                    <span className="coordinate text-[11px] text-muted-foreground">
+                      {countryFlag(stop.country)} {formatCoordinate(stop.lat, stop.lng)}
+                    </span>
+                    <CopyButton
+                      value={formatCoordinatePlain(stop.lat, stop.lng)}
+                      label="Satnav"
+                      title="Copy coordinates for satnav"
+                      className="px-1.5 py-0.5 text-[10px]"
+                    />
+                  </div>
                 )}
               </div>
               {stop.booking_reference && (
-                <code className="shrink-0 rounded-md border border-green-200 bg-green-50 px-2 py-1 font-mono text-[11px] font-bold text-green-700">
-                  {stop.booking_reference}
-                </code>
+                <CopyButton
+                  value={stop.booking_reference}
+                  title="Copy booking reference"
+                  className="shrink-0 border-health-good/30 bg-health-good/10 font-mono text-[11px] font-bold text-health-good"
+                />
               )}
             </div>
           </div>
 
           {/* Details row */}
           {(stop.nights > 0 || stop.arrival_date || stop.cost != null) && (
-            <div className="flex flex-wrap items-center gap-x-6 gap-y-2 border-t border-slate-100 bg-slate-50 px-4 py-3 print:bg-white">
-              {stop.nights > 0 && (
-                <Metric label="Nights" value={String(stop.nights)} />
-              )}
+            <div className="flex flex-wrap items-center gap-x-6 gap-y-2 bg-white/[0.03] px-4 py-3 print:bg-white">
+              {stop.nights > 0 && <Metric label="Nights" value={String(stop.nights)} />}
               {stop.arrival_date && (
                 <Metric label="Arrive" value={fmtShort(stop.arrival_date)} />
               )}
@@ -599,17 +852,15 @@ function DriveRow({ entry, isLast }: { entry: DayEntry; isLast: boolean }) {
                 <Metric label="Depart" value={fmtShort(stop.departure_date)} />
               )}
               {stop.cost != null && (
-                <Metric label="Total cost" value={fmtCost(stop.cost, stop.currency)} />
+                <Metric label="Total cost" value={formatCost(stop.cost, stop.currency)} />
               )}
-              {BOOKABLE.has(stop.type) && (
-                <PaymentBadge status={paymentStatus} />
-              )}
+              {BOOKABLE_TYPES.has(stop.type) && <PaymentBadge status={paymentStatus} />}
             </div>
           )}
 
           {/* Notes */}
           {stop.notes && (
-            <div className="border-t border-slate-100 px-4 py-3 text-xs leading-relaxed text-slate-600 print:border-slate-200">
+            <div className="px-4 pb-3 pt-1 text-xs leading-relaxed text-muted-foreground">
               {stop.notes}
             </div>
           )}
@@ -622,23 +873,22 @@ function DriveRow({ entry, isLast }: { entry: DayEntry; isLast: boolean }) {
 function RestRow({ entry, isLast }: { entry: DayEntry; isLast: boolean }) {
   return (
     <div className="flex gap-0 print:break-inside-avoid">
-      {/* Timeline spine */}
-      <div className="flex w-14 shrink-0 flex-col items-center print:w-12">
-        <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border-2 border-slate-200 bg-slate-50 font-mono text-[10px] font-bold text-slate-400">
+      <div className="flex w-10 shrink-0 flex-col items-center sm:w-14 print:w-12">
+        <div className="font-display flex h-7 w-7 shrink-0 items-center justify-center rounded-full border-2 border-border bg-muted text-[10px] font-semibold text-muted-foreground tabular-nums">
           {String(entry.dayNumber).padStart(2, "0")}
         </div>
-        {!isLast && (
-          <div className="min-h-6 w-px flex-1 bg-slate-200 print:bg-slate-300" />
-        )}
+        {!isLast && <div className="min-h-6 w-px flex-1 bg-border print:bg-border" />}
       </div>
-
-      {/* Content */}
       <div className="min-w-0 flex-1 pb-4 pt-0.5">
         <div className="flex items-center gap-2 text-sm">
-          <span className="font-medium text-slate-500">{fmtDayFull(entry.date)}</span>
-          <span className="text-slate-300">·</span>
-          <span className="italic text-slate-400">Rest day — {entry.stop.name}</span>
-          <span className="ml-auto text-base leading-none">🌿</span>
+          <span className="font-medium text-muted-foreground">
+            {fmtDayFull(entry.date)}
+          </span>
+          <span className="text-muted-foreground/40">·</span>
+          <span className="italic text-muted-foreground">
+            Rest day — {entry.stop.name}
+          </span>
+          <Moon className="ml-auto size-3.5 text-muted-foreground" aria-hidden="true" />
         </div>
       </div>
     </div>
@@ -648,37 +898,77 @@ function RestRow({ entry, isLast }: { entry: DayEntry; isLast: boolean }) {
 function Metric({ label, value }: { label: string; value: string }) {
   return (
     <div>
-      <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-400">{label}</p>
-      <p className="font-mono text-sm font-bold text-slate-800">{value}</p>
+      <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+        {label}
+      </p>
+      <p className="font-display text-sm font-semibold tabular-nums">{value}</p>
     </div>
   );
 }
 
 function PaymentBadge({ status }: { status: PaymentStatus }) {
   const config: Record<PaymentStatus, { label: string; className: string }> = {
-    paid: { label: "✅ Paid in full", className: "bg-green-50 text-green-700 border-green-200" },
-    confirmed: { label: "⚠️ Pay on departure/arrival", className: "bg-amber-50 text-amber-700 border-amber-200" },
-    "on-arrival": { label: "⚠️ Pay on arrival", className: "bg-amber-50 text-amber-700 border-amber-200" },
-    outstanding: { label: "🔴 Payment outstanding", className: "bg-red-50 text-red-700 border-red-200" },
-    tbd: { label: "TBD", className: "bg-slate-50 text-slate-500 border-slate-200" },
+    paid: {
+      label: "Paid in full",
+      className: "border-health-good/30 bg-health-good/10 text-health-good",
+    },
+    confirmed: {
+      label: "Pay on departure/arrival",
+      className: "border-health-warn/40 bg-health-warn/10 text-health-warn",
+    },
+    "on-arrival": {
+      label: "Pay on arrival",
+      className: "border-health-warn/40 bg-health-warn/10 text-health-warn",
+    },
+    outstanding: {
+      label: "Payment outstanding",
+      className: "border-health-bad/40 bg-health-bad/10 text-health-bad-text",
+    },
+    tbd: {
+      label: "TBD",
+      className: "border-border bg-muted text-muted-foreground",
+    },
   };
   const c = config[status];
   return (
-    <span className={`inline-flex rounded-full border px-2.5 py-0.5 text-[11px] font-semibold ${c.className}`}>
+    <span
+      className={cn(
+        "inline-flex rounded-full border px-2.5 py-0.5 text-[11px] font-semibold",
+        c.className,
+      )}
+    >
       {c.label}
     </span>
   );
 }
 
-function VignetteStatusBadge({ status }: { status: "paid" | "ordered" | "pickup" }) {
+function VignetteStatusBadge({
+  status,
+}: {
+  status: "paid" | "ordered" | "pickup";
+}) {
   const config = {
-    paid: { label: "✅ Paid", className: "bg-green-50 text-green-700 border-green-200" },
-    ordered: { label: "📬 Ordered", className: "bg-blue-50 text-blue-700 border-blue-200" },
-    pickup: { label: "⏳ En route", className: "bg-amber-50 text-amber-700 border-amber-200" },
+    paid: {
+      label: "Paid",
+      className: "border-health-good/30 bg-health-good/10 text-health-good",
+    },
+    ordered: {
+      label: "Ordered",
+      className: "border-border bg-muted text-foreground",
+    },
+    pickup: {
+      label: "En route",
+      className: "border-health-warn/40 bg-health-warn/10 text-health-warn",
+    },
   };
   const c = config[status];
   return (
-    <span className={`inline-flex shrink-0 whitespace-nowrap rounded-full border px-2.5 py-0.5 text-[11px] font-semibold ${c.className}`}>
+    <span
+      className={cn(
+        "inline-flex shrink-0 whitespace-nowrap rounded-full border px-2.5 py-0.5 text-[11px] font-semibold",
+        c.className,
+      )}
+    >
       {c.label}
     </span>
   );
@@ -686,10 +976,10 @@ function VignetteStatusBadge({ status }: { status: "paid" | "ordered" | "pickup"
 
 function StopMapThumb({ stop }: { stop: SupabaseStop }) {
   if (!MAPBOX_TOKEN) return null;
-  const pin = STOP_PIN_COLOUR[stop.type] ?? "475569";
+  const pin = STOP_PIN_COLOUR[stop.type] ?? "5a7d8c";
   const zoom = stop.type === "event" ? 13 : stop.type === "city" ? 12 : 11;
   const src = [
-    `https://api.mapbox.com/styles/v1/mapbox/outdoors-v12/static`,
+    `https://api.mapbox.com/styles/v1/mapbox/dark-v11/static`,
     `/pin-s+${pin}(${stop.lng},${stop.lat})`,
     `/${stop.lng},${stop.lat},${zoom}`,
     `/640x200@2x`,
@@ -697,7 +987,7 @@ function StopMapThumb({ stop }: { stop: SupabaseStop }) {
   ].join("");
 
   return (
-    <div className="overflow-hidden border-b border-slate-100 print:hidden">
+    <div className="overflow-hidden print:hidden">
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
         src={src}

@@ -1,0 +1,523 @@
+"use client";
+
+import { useEffect, useState } from "react";
+import { X, ExternalLink } from "lucide-react";
+
+import { CopyButton } from "@/components/trip/copy-button";
+import { NavigateButton } from "@/components/trip/navigate-button";
+import { StopWeather } from "@/components/trip/stop-weather";
+import { Badge } from "@/components/ui/badge";
+import { getBookingExtraForStop, type TollInfo } from "@/lib/booking-details";
+import {
+  formatDistance,
+  formatDuration,
+} from "@/lib/mapbox/directions";
+import { reverseGeocode } from "@/lib/mapbox/reverse-geocode";
+import { formatCoordinate, formatCoordinatePlain } from "@/lib/coordinates";
+import { cn } from "@/lib/utils";
+import {
+  countryFlag,
+  formatCost,
+  getBookingStatus,
+  getPaymentSummary,
+  type DriveLeg,
+} from "@/lib/trip-detail";
+
+interface StopDetailPanelProps {
+  leg: DriveLeg;
+  onClose: () => void;
+  /** Rendered inside the mobile sheet: body only, no aside chrome/header
+   *  (the sheet supplies the drag header with back + name + badge). */
+  embedded?: boolean;
+}
+
+/**
+ * Detect campervan pitch/facility cues from the free-text notes + amenities.
+ * Answers the practical questions: grass or hardstanding? level (chocks)?
+ * hookup? dog-friendly? — only surfaced where the source text actually says so.
+ */
+function detectFacilities(notes: string | null, amenities?: string[] | null): string[] {
+  const text = `${notes ?? ""} ${(amenities ?? []).join(" ")}`.toLowerCase();
+  const chips: string[] = [];
+  if (/hardstand|hard-stand|gravel|tarmac|concrete|paved/.test(text))
+    chips.push("Hardstanding");
+  else if (/grass|meadow|field/.test(text)) chips.push("Grass pitch");
+  if (/\blevel\b|flat pitch/.test(text)) chips.push("Level");
+  if (/slop|uneven|terrac|hill/.test(text)) chips.push("Sloped — bring chocks");
+  if (/electric|hook-?up|ehu|hookup|\bpower\b|\bamp\b/.test(text))
+    chips.push("Electric hookup");
+  if (/\bwater\b|tap|drinking/.test(text)) chips.push("Water");
+  if (/shower/.test(text)) chips.push("Showers");
+  if (/toilet|wc/.test(text)) chips.push("Toilets");
+  if (/chemical|waste|disposal|dump|cassette|grey/.test(text))
+    chips.push("Waste disposal");
+  if (/\bdog|pet/.test(text)) chips.push("Dog-friendly");
+  if (/wi-?fi/.test(text)) chips.push("Wi-Fi");
+  return chips;
+}
+
+/** Detect campsite amenity cues (laundry, shop, bar, playground, etc.). */
+function detectCampsiteAmenities(notes: string | null, amenities?: string[] | null): string[] {
+  const text = `${notes ?? ""} ${(amenities ?? []).join(" ")}`.toLowerCase();
+  const chips: string[] = [];
+  if (/laundry|washing machine|laundr/.test(text)) chips.push("Laundry");
+  if (/tumble dryer|\bdryer\b/.test(text)) chips.push("Tumble dryer");
+  if (/dishwasher/.test(text)) chips.push("Dishwasher");
+  if (/\bkitchen\b|cooking facilit/.test(text)) chips.push("Kitchen");
+  if (/\bshop\b|supermarket|grocery|minimarket/.test(text)) chips.push("Shop");
+  if (/\bbar\b|\brestaurant\b|café|cafe|snack bar/.test(text)) chips.push("Bar / restaurant");
+  if (/\bbbq\b|barbecue|barbeque/.test(text)) chips.push("BBQ area");
+  if (/playground|play area|children.s facilit/.test(text)) chips.push("Playground");
+  if (/disabled|accessibility|wheelchair/.test(text)) chips.push("Accessible");
+  return chips;
+}
+
+/** Detect sports & leisure facilities (pool, tennis, gym, spa, etc.). */
+function detectSports(notes: string | null, amenities?: string[] | null): string[] {
+  const text = `${notes ?? ""} ${(amenities ?? []).join(" ")}`.toLowerCase();
+  const chips: string[] = [];
+  if (/swimming pool|\bpool\b|piscine/.test(text)) chips.push("Swimming pool");
+  if (/heated pool|indoor pool/.test(text)) chips.push("Heated pool");
+  if (/water slide|waterslide/.test(text)) chips.push("Water slides");
+  if (/\btennis\b/.test(text)) chips.push("Tennis");
+  if (/\bgolf\b/.test(text)) chips.push("Golf");
+  if (/volleyball|sports court|basketball/.test(text)) chips.push("Sports court");
+  if (/cycling|bike hire|bicycle rental/.test(text)) chips.push("Bike hire");
+  if (/\bgym\b|fitness|workout room/.test(text)) chips.push("Gym");
+  if (/\bspa\b|\bsauna\b|jacuzzi|hot tub/.test(text)) chips.push("Spa / sauna");
+  if (/minigolf|mini-golf/.test(text)) chips.push("Mini-golf");
+  return chips;
+}
+
+/** Slide-in stop detail — right rail on desktop; body-only inside the mobile sheet. */
+export function StopDetailPanel({ leg, onClose, embedded }: StopDetailPanelProps) {
+  const { stop, prevStop, minutes, distance } = leg;
+  const booking = getBookingStatus(stop);
+  const extra = getBookingExtraForStop(stop);
+  const payment = getPaymentSummary(stop);
+  const facilities = detectFacilities(stop.notes, stop.amenities);
+  const campsiteAmenities =
+    extra?.campsiteAmenities ??
+    (stop.type === "campsite" ? detectCampsiteAmenities(stop.notes, stop.amenities) : []);
+  const sports =
+    extra?.sports ??
+    (stop.type === "campsite" ? detectSports(stop.notes, stop.amenities) : []);
+  const hasDrive = minutes > 0;
+
+  // Address: prefer the confirmed static one, else reverse-geocode the coords.
+  const [geoAddress, setGeoAddress] = useState<string | null>(null);
+  useEffect(() => {
+    if (extra?.address) return;
+    let active = true;
+    setGeoAddress(null);
+    reverseGeocode(stop.lat, stop.lng).then((a) => {
+      if (active) setGeoAddress(a);
+    });
+    return () => {
+      active = false;
+    };
+  }, [stop.lat, stop.lng, extra?.address]);
+  const address = extra?.address ?? geoAddress;
+
+  return (
+    <aside
+      className={cn(
+        embedded
+          ? "flex flex-col"
+          : `glass scroll-fade pointer-events-auto absolute z-30 hidden flex-col overflow-y-auto rounded-2xl border border-white/10 print:hidden
+             md:inset-y-4 md:left-auto md:right-4 md:bottom-4 md:top-4 md:flex md:w-[380px]`,
+      )}
+    >
+      {/* Header — desktop rail only; the sheet supplies its own on mobile */}
+      {!embedded && (
+        <div className="sticky top-0 z-10 flex items-start justify-between gap-2 border-b border-white/5 bg-background/80 px-5 pb-3 pt-4 backdrop-blur-md">
+          <div className="min-w-0">
+            <h2 className="font-display truncate text-lg font-semibold">
+              {countryFlag(stop.country)} {stop.name}
+            </h2>
+            {stop.full_name && stop.full_name !== stop.name && (
+              <p className="truncate text-xs text-muted-foreground">
+                {stop.full_name}
+              </p>
+            )}
+          </div>
+          <div className="flex items-center gap-2">
+            {booking === "confirmed" && <Badge variant="booked">Booked</Badge>}
+            {booking === "pending" && (
+              <Badge variant="unbooked">Not booked</Badge>
+            )}
+            <button
+              type="button"
+              onClick={onClose}
+              aria-label="Close"
+              className="focus-ring flex size-9 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-white/[0.08] hover:text-foreground"
+            >
+              <X className="size-4" />
+            </button>
+          </div>
+        </div>
+      )}
+
+      <div className="flex flex-col gap-4 px-5 pb-5 pt-4">
+        {/* Drive from → to */}
+        {prevStop && hasDrive && (
+          <div className="flex items-stretch gap-2.5 rounded-lg bg-white/[0.04] p-3 text-xs">
+            <div className="flex flex-col items-center pt-1">
+              <span className="size-1.5 rounded-full bg-muted-foreground" />
+              <span className="my-0.5 w-px flex-1 border-l border-dashed border-white/15" />
+              <span className="size-1.5 rounded-full bg-volt-bright" />
+            </div>
+            <div className="flex flex-1 flex-col justify-between gap-2">
+              <span className="text-muted-foreground">{prevStop.name}</span>
+              <span className="font-medium">{stop.name}</span>
+            </div>
+            <div className="font-display self-center text-right leading-tight tabular-nums text-muted-foreground">
+              {formatDuration(minutes * 60)}
+              <br />
+              {formatDistance(distance)}
+            </div>
+          </div>
+        )}
+
+        {/* Address & satnav — address primary, coordinates as fallback */}
+        <div>
+          <p className="label mb-1.5 text-muted-foreground">
+            Address &amp; satnav
+          </p>
+          {address && <p className="mb-2 text-sm leading-snug">{address}</p>}
+          <div className="flex flex-wrap items-center gap-2">
+            <NavigateButton
+              lat={stop.lat}
+              lng={stop.lng}
+              label={address ?? stop.name}
+            />
+            {address && (
+              <CopyButton
+                value={address}
+                label="Copy address"
+                title="Copy address"
+              />
+            )}
+            <CopyButton
+              value={formatCoordinatePlain(stop.lat, stop.lng)}
+              label="Copy coordinates"
+              title="Copy coordinates"
+            />
+          </div>
+          <p className="coordinate mt-1.5 text-[13px] text-muted-foreground">
+            {formatCoordinate(stop.lat, stop.lng)}
+          </p>
+        </div>
+
+        {/* Booking / refs / cost / links */}
+        {(stop.booking_reference ||
+          stop.cost != null ||
+          stop.booking_url ||
+          payment ||
+          (extra?.refs?.length ?? 0) > 0 ||
+          extra?.siteInfoUrl) && (
+          <div>
+            <p className="label mb-1.5 text-muted-foreground">
+              Booking
+            </p>
+            <div className="flex flex-wrap items-center gap-2">
+              {stop.booking_reference && (
+                <CopyButton
+                  value={stop.booking_reference}
+                  title="Copy booking reference"
+                  className="border-health-good/30 bg-health-good/10 px-2 py-1 font-mono text-[13px] text-health-good"
+                />
+              )}
+              {extra?.refs?.map((r) => (
+                <CopyButton
+                  key={r.value}
+                  value={r.value}
+                  label={`${r.label} · ${r.value}`}
+                  title={`Copy ${r.label} reference`}
+                  className="px-2 py-1 font-mono text-[13px]"
+                />
+              ))}
+              {extra?.siteInfoUrl && (
+                <a
+                  href={extra.siteInfoUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="focus-ring inline-flex items-center gap-1 rounded text-[13px] font-medium text-volt-bright hover:underline"
+                >
+                  {extra.siteInfoLabel ?? "Info"} <ExternalLink className="size-3" />
+                </a>
+              )}
+              {stop.cost != null && (
+                <span className="font-display text-sm tabular-nums">
+                  {formatCost(stop.cost, stop.currency)}
+                </span>
+              )}
+              {stop.booking_url && (
+                <a
+                  href={stop.booking_url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="focus-ring inline-flex items-center gap-1 rounded text-[13px] font-medium text-volt-bright hover:underline"
+                >
+                  Website <ExternalLink className="size-3" />
+                </a>
+              )}
+            </div>
+            {payment && (
+              <p
+                className={cn(
+                  "mt-2 flex items-center gap-1.5 text-[13px] font-medium tabular-nums",
+                  payment.tone === "paid"
+                    ? "text-health-good"
+                    : "text-health-warn",
+                )}
+              >
+                <span
+                  aria-hidden
+                  className={cn(
+                    "size-1.5 rounded-full",
+                    payment.tone === "paid" ? "bg-health-good" : "bg-health-warn",
+                  )}
+                />
+                {payment.label}
+              </p>
+            )}
+          </div>
+        )}
+
+        {/* Weather at arrival */}
+        <StopWeather lat={stop.lat} lng={stop.lng} date={stop.arrival_date} />
+
+        {/* Check-in (from the confirmation email) */}
+        {extra && (extra.checkIn || extra.checkOut || extra.arrivalNote) && (
+          <div>
+            <p className="label mb-1.5 text-muted-foreground">
+              Check-in
+            </p>
+            {(extra.checkIn || extra.checkOut) && (
+              <div className="flex flex-wrap gap-x-5 gap-y-1 text-xs tabular-nums">
+                {extra.checkIn && (
+                  <span>
+                    <span className="text-muted-foreground">In</span>{" "}
+                    {extra.checkIn}
+                  </span>
+                )}
+                {extra.checkOut && (
+                  <span>
+                    <span className="text-muted-foreground">Out</span>{" "}
+                    {extra.checkOut}
+                  </span>
+                )}
+              </div>
+            )}
+            {extra.arrivalNote && (
+              <p className="mt-1.5 text-[13px] leading-relaxed text-foreground/80">
+                {extra.arrivalNote}
+              </p>
+            )}
+          </div>
+        )}
+
+        {/* Reminders / action items */}
+        {extra?.reminders && extra.reminders.length > 0 && (
+          <div>
+            <p className="label mb-1.5 text-muted-foreground">
+              Reminders
+            </p>
+            <ul className="space-y-1.5">
+              {extra.reminders.map((r, i) => {
+                // Amber only for genuine action-required items; neutral otherwise.
+                const action =
+                  /\b(add|buy|pay|pick up|confirm|before|must|need|balance|due|order)\b/i.test(
+                    r,
+                  );
+                return (
+                  <li
+                    key={i}
+                    className="flex gap-2 text-[13px] leading-relaxed text-foreground/80"
+                  >
+                    <span
+                      className={`mt-1 size-1.5 shrink-0 rounded-full ${action ? "bg-health-warn" : "bg-muted-foreground"}`}
+                    />
+                    <span>{r}</span>
+                  </li>
+                );
+              })}
+            </ul>
+          </div>
+        )}
+
+        {/* Tolls & vignettes */}
+        {extra?.tolls && extra.tolls.length > 0 && (
+          <div>
+            <p className="label mb-1.5 text-muted-foreground">
+              Tolls &amp; vignettes
+            </p>
+            <div className="flex flex-col gap-3">
+              {extra.tolls.map((toll: TollInfo) => (
+                <div key={toll.name} className="rounded-lg bg-white/[0.04] p-3">
+                  <div className="mb-1 flex flex-wrap items-center gap-2">
+                    <span className="text-[13px] font-medium">{toll.name}</span>
+                    <span className="rounded-full bg-white/[0.08] px-2 py-0.5 text-[11px] text-muted-foreground">
+                      {toll.type === "vignette" ? "Buy before entry" : "Pay at booth"}
+                    </span>
+                  </div>
+                  {toll.notes && (
+                    <p className="mb-2 text-[13px] leading-relaxed text-foreground/70">
+                      {toll.notes}
+                    </p>
+                  )}
+                  <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground">
+                    <span>
+                      <span className="font-medium text-foreground/80">Payment: </span>
+                      {toll.payment.join(" · ")}
+                    </span>
+                    {toll.cost && (
+                      <span>
+                        <span className="font-medium text-foreground/80">Cost: </span>
+                        {toll.cost}
+                      </span>
+                    )}
+                  </div>
+                  {toll.buyUrl && (
+                    <a
+                      href={toll.buyUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="focus-ring mt-2 inline-flex items-center gap-1 rounded text-[13px] font-medium text-volt-bright hover:underline"
+                    >
+                      Buy online <ExternalLink className="size-3" />
+                    </a>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Awning */}
+        {extra?.awning && (
+          <div>
+            <p className="label mb-1.5 text-muted-foreground">
+              Awning
+            </p>
+            <div className="flex items-center gap-2">
+              <span
+                className={`size-1.5 rounded-full ${
+                  extra.awning === "yes"
+                    ? "bg-health-good"
+                    : extra.awning === "no"
+                      ? "bg-health-bad"
+                      : "bg-health-warn"
+                }`}
+              />
+              <span className="text-xs font-medium">
+                {extra.awning === "yes"
+                  ? "Allowed"
+                  : extra.awning === "no"
+                    ? "Not allowed"
+                    : "Check first"}
+              </span>
+            </div>
+            {extra.awningNote && (
+              <p className="mt-1.5 text-[13px] leading-relaxed text-foreground/80">
+                {extra.awningNote}
+              </p>
+            )}
+          </div>
+        )}
+
+        {/* Pitch & facilities */}
+        <div>
+          <p className="label mb-1.5 text-muted-foreground">
+            Pitch &amp; facilities
+          </p>
+          {facilities.length > 0 ? (
+            <div className="flex flex-wrap gap-1.5">
+              {facilities.map((f) => (
+                <span
+                  key={f}
+                  className="rounded-full bg-white/[0.06] px-2.5 py-1 text-[13px] text-foreground"
+                >
+                  {f}
+                </span>
+              ))}
+            </div>
+          ) : (
+            <p className="text-[13px] text-foreground/70">
+              Pitch specifics (surface, levelling, hookup) aren&apos;t listed —
+              check on arrival
+              {extra?.siteInfoUrl ? (
+                <>
+                  {" "}
+                  or on the{" "}
+                  <a
+                    href={extra.siteInfoUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="focus-ring rounded font-medium text-volt-bright hover:underline"
+                  >
+                    campsite info
+                  </a>
+                </>
+              ) : (
+                ""
+              )}
+              .
+            </p>
+          )}
+        </div>
+
+        {/* Campsite facilities (laundry, shop, bar, etc.) */}
+        {campsiteAmenities.length > 0 && (
+          <div>
+            <p className="label mb-1.5 text-muted-foreground">
+              Campsite facilities
+            </p>
+            <div className="flex flex-wrap gap-1.5">
+              {campsiteAmenities.map((f) => (
+                <span
+                  key={f}
+                  className="rounded-full bg-white/[0.06] px-2.5 py-1 text-[13px] text-foreground"
+                >
+                  {f}
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Sports & leisure */}
+        {sports.length > 0 && (
+          <div>
+            <p className="label mb-1.5 text-muted-foreground">
+              Sports &amp; leisure
+            </p>
+            <div className="flex flex-wrap gap-1.5">
+              {sports.map((s) => (
+                <span
+                  key={s}
+                  className="rounded-full bg-white/[0.06] px-2.5 py-1 text-[13px] text-foreground"
+                >
+                  {s}
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Notes */}
+        {stop.notes && (
+          <div>
+            <p className="label mb-1.5 text-muted-foreground">
+              Notes
+            </p>
+            <p className="whitespace-pre-line text-xs leading-relaxed text-muted-foreground">
+              {stop.notes}
+            </p>
+          </div>
+        )}
+      </div>
+    </aside>
+  );
+}

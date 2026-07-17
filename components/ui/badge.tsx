@@ -18,6 +18,12 @@ const badgeVariants = cva(
           "border-border text-foreground [a&]:hover:bg-accent [a&]:hover:text-accent-foreground",
         ghost: "[a&]:hover:bg-accent [a&]:hover:text-accent-foreground",
         link: "text-primary underline-offset-4 [a&]:hover:underline",
+        highlight:
+          "bg-highlight text-highlight-foreground [a&]:hover:bg-highlight/90",
+        booked:
+          "border-transparent bg-health-good/15 text-health-good [a&]:hover:bg-health-good/25",
+        unbooked:
+          "border-health-warn/40 bg-transparent text-health-warn [a&]:hover:bg-health-warn/10",
       },
     },
     defaultVariants: {
