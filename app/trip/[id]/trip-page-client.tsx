@@ -9,12 +9,14 @@ import { TripMap, type TripMapHandle } from "@/components/map/trip-map";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
+import { Separator } from "@/components/ui/separator";
 import {
   formatDistance,
   formatDuration,
   type RouteResult,
 } from "@/lib/mapbox/directions";
 import { CAMPSITE_OPTIONS } from "@/lib/campsite-options";
+import { DayByDayView } from "./day-by-day";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -223,6 +225,7 @@ export default function TripPageClient() {
   const [route, setRoute] = useState<RouteResult | null>(null);
   const [loading, setLoading] = useState(true);
   const [deleting, setDeleting] = useState(false);
+  const [activeTab, setActiveTab] = useState<"overview" | "itinerary">("overview");
 
   useEffect(() => {
     async function fetchTrip() {
@@ -419,116 +422,89 @@ export default function TripPageClient() {
   function renderStopCard(stop: SupabaseStop, globalIndex: number) {
     const booking = getBookingStatus(stop);
     const isWaypoint = stop.nights === 0 && globalIndex > 0 && globalIndex < sortedStops.length - 1;
+    const isEvent = stop.type === "event";
 
-    // Waypoint: compact inline card
+    // Waypoint: compact inline
     if (isWaypoint) {
       return (
         <div
           key={stop.id}
-          className="flex cursor-pointer items-center gap-2 rounded-md border border-dashed border-amber-300 bg-amber-50 px-3 py-2 transition-colors hover:bg-amber-100 dark:border-amber-700 dark:bg-amber-950/30 dark:hover:bg-amber-950/50"
+          className="flex cursor-pointer items-center gap-2 rounded-md border border-dashed border-amber-300 bg-amber-50 px-3 py-2 text-xs transition-colors hover:bg-amber-100"
           onClick={() => mapRef.current?.flyToStop(globalIndex)}
         >
-          <div className="flex h-4 w-4 shrink-0 items-center justify-center rounded-sm bg-amber-500 rotate-45">
-            <span className="sr-only">waypoint</span>
-          </div>
-          <div className="min-w-0 flex-1">
-            <span className="text-xs font-medium text-amber-800 dark:text-amber-300">
-              {stop.name}
-            </span>
-            {stop.notes && (
-              <span className="ml-1.5 text-[11px] text-amber-600/80 dark:text-amber-400/70">
-                — {stop.notes.split('.')[0]}
-              </span>
-            )}
-          </div>
-          <Badge className="bg-amber-200 text-amber-800 text-[9px] dark:bg-amber-800 dark:text-amber-200" variant="secondary">
-            waypoint
-          </Badge>
+          <div className="h-1.5 w-1.5 shrink-0 rotate-45 rounded-sm bg-amber-400" />
+          <span className="min-w-0 flex-1 truncate font-medium text-amber-800">{stop.name}</span>
+          <span className="shrink-0 font-mono text-[10px] text-amber-500">via</span>
         </div>
       );
     }
 
+    const displayNum = stopDisplayNumbers.get(globalIndex) ?? globalIndex + 1;
+
     return (
       <Card
         key={stop.id}
-        className="cursor-pointer shadow-none transition-colors hover:bg-muted/50"
+        className={`cursor-pointer shadow-none transition-colors hover:bg-muted/40 ${isEvent ? "border-red-200 bg-red-50/50" : ""}`}
         onClick={() => mapRef.current?.flyToStop(globalIndex)}
       >
         <CardContent className="flex items-start gap-3 p-3">
-          <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary text-xs font-bold text-primary-foreground">
-            {stopDisplayNumbers.get(globalIndex) ?? globalIndex + 1}
+          {/* Stop number node */}
+          <div className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full font-mono text-xs font-bold text-primary-foreground ${isEvent ? "bg-red-600" : "bg-primary"}`}>
+            {String(displayNum).padStart(2, "0")}
           </div>
+
           <div className="min-w-0 flex-1">
-            {/* Name + type + booking status */}
+            {/* Name row */}
             <div className="flex flex-wrap items-center gap-1.5">
-              <span className="text-sm font-semibold leading-tight">
-                {stop.name}
-              </span>
-              <Badge
-                className={`${TYPE_COLOURS[stop.type]} text-[10px]`}
-                variant="secondary"
-              >
+              <span className="text-sm font-semibold leading-tight">{stop.name}</span>
+              <Badge variant="secondary" className="text-[10px]">
                 {stop.type}
               </Badge>
-              {booking && (
-                <Badge
-                  className={`${BOOKING_COLOURS[booking]} text-[10px]`}
-                  variant="secondary"
-                >
-                  {booking === "confirmed" ? "Confirmed" : "Pending"}
+              {booking === "confirmed" && (
+                <Badge variant="secondary" className="bg-green-100 text-green-700 text-[10px]">
+                  ✅ Booked
+                </Badge>
+              )}
+              {booking === "pending" && (
+                <Badge variant="secondary" className="bg-amber-100 text-amber-700 text-[10px]">
+                  ⚠️ Pending
                 </Badge>
               )}
             </div>
 
-            {/* Full name */}
-            {stop.full_name && stop.full_name !== stop.name && (
-              <p className="text-xs text-muted-foreground">{stop.full_name}</p>
-            )}
-
             {/* Country */}
             {stop.country && (
-              <p className="text-xs text-muted-foreground">{stop.country}</p>
+              <p className="font-mono text-[10px] text-muted-foreground">{stop.country}</p>
             )}
 
             {/* Dates + nights */}
-            <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+            <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs text-muted-foreground">
               {stop.arrival_date && (
                 <span>
                   {formatDateShort(stop.arrival_date)}
-                  {stop.departure_date &&
-                    ` — ${formatDateShort(stop.departure_date)}`}
+                  {stop.departure_date && ` — ${formatDateShort(stop.departure_date)}`}
                 </span>
               )}
               {stop.nights > 0 && (
-                <span>
-                  {stop.nights} night{stop.nights > 1 ? "s" : ""}
+                <span className="font-mono">{stop.nights}n</span>
+              )}
+              {stop.cost != null && (
+                <span className="font-mono font-medium text-foreground">
+                  {formatCost(stop.cost, stop.currency)}
                 </span>
               )}
             </div>
 
-            {/* Cost — hidden if null */}
-            {stop.cost != null && (
-              <p className="mt-0.5 text-xs text-muted-foreground">
-                {formatCost(stop.cost, stop.currency)}
-                {stop.nights > 1 && (
-                  <span className="text-muted-foreground/60">
-                    {" "}
-                    ({formatCost(stop.cost / stop.nights, stop.currency)}/night)
-                  </span>
-                )}
-              </p>
-            )}
-
-            {/* Booking reference — hidden if null */}
+            {/* Booking reference */}
             {stop.booking_reference && (
-              <p className="mt-0.5 font-mono text-[10px] text-muted-foreground/70">
-                Ref: {stop.booking_reference}
-              </p>
+              <code className="mt-1.5 inline-block rounded border border-green-200 bg-green-50 px-1.5 py-0.5 font-mono text-[10px] font-semibold text-green-700">
+                {stop.booking_reference}
+              </code>
             )}
 
             {/* Notes */}
             {stop.notes && (
-              <p className="mt-1 line-clamp-2 text-xs text-muted-foreground/80">
+              <p className="mt-1.5 line-clamp-2 text-xs text-muted-foreground/70">
                 {stop.notes}
               </p>
             )}
@@ -538,49 +514,43 @@ export default function TripPageClient() {
     );
   }
 
-  /** Render segment row between two consecutive stops */
+  /** Render segment connector between stops */
   function renderSegment(globalIndex: number) {
     if (globalIndex >= sortedStops.length - 1) return null;
+    const seg = route?.segments[globalIndex];
+    const healthKey = seg ? segmentHealthKey(seg.duration, maxDrivingMinutes) : null;
+
+    const metricClass = healthKey === "green"
+      ? "text-green-600"
+      : healthKey === "amber"
+        ? "text-amber-600"
+        : healthKey === "red"
+          ? "text-red-600"
+          : "text-muted-foreground";
 
     return (
-      <div className="flex items-center gap-2 px-3 py-1.5">
-        <div className="flex flex-col items-center gap-1">
+      <div className="flex items-center gap-2.5 px-3 py-0.5">
+        <div className="ml-[0.8rem] flex flex-col items-center">
           <div className="h-3 w-px bg-border" />
-          {route?.segments[globalIndex] ? (
-            <div
-              className={`h-2.5 w-2.5 rounded-full ${SEGMENT_HEALTH_COLOURS[segmentHealthKey(route.segments[globalIndex].duration, maxDrivingMinutes)]}`}
-            />
-          ) : (
-            <div className="h-2.5 w-2.5 rounded-full bg-muted" />
-          )}
+          <div className={`h-1.5 w-1.5 rounded-full ${SEGMENT_HEALTH_COLOURS[healthKey ?? "green"] ?? "bg-muted"}`} />
           <div className="h-3 w-px bg-border" />
         </div>
-        <div className="text-xs text-muted-foreground">
-          {route?.segments[globalIndex] ? (
-            <>
-              <span className="font-medium text-foreground">
-                {formatDuration(route.segments[globalIndex].duration)}
-              </span>
-              {" · "}
-              {formatDistance(route.segments[globalIndex].distance)}
-            </>
-          ) : (
-            <span className="italic">Calculating...</span>
-          )}
-        </div>
+        <span className={`font-mono text-xs font-semibold ${metricClass}`}>
+          {seg ? `${formatDuration(seg.duration)} · ${formatDistance(seg.distance)}` : "—"}
+        </span>
       </div>
     );
   }
 
-  /** Render the outbound/return section divider */
+  /** Outbound / return leg divider */
   function renderLegDivider(label: string) {
     return (
       <div className="flex items-center gap-2 px-3 py-2">
-        <div className="h-px flex-1 bg-border" />
-        <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+        <Separator className="flex-1" />
+        <span className="font-mono text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
           {label}
         </span>
-        <div className="h-px flex-1 bg-border" />
+        <Separator className="flex-1" />
       </div>
     );
   }
@@ -588,27 +558,58 @@ export default function TripPageClient() {
   // ---- Main render ----
 
   return (
-    <div className="flex h-screen flex-col overflow-hidden bg-background">
+    <div className="flex h-screen flex-col overflow-hidden bg-background print:h-auto print:overflow-visible">
       {/* Header */}
-      <header className="flex-shrink-0 border-b">
-        <div className="flex items-center justify-between px-4 py-3">
-          <Link href="/" className="text-lg font-bold hover:text-primary">
-            Route Planner
+      <header className="flex-shrink-0 border-b bg-background print:hidden">
+        <div className="flex items-center justify-between gap-3 px-4 py-2.5">
+          <Link href="/" className="font-mono text-xs font-semibold uppercase tracking-widest text-muted-foreground hover:text-foreground">
+            ← Route Planner
           </Link>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleDelete}
-            disabled={deleting}
-            className="text-destructive hover:bg-destructive hover:text-destructive-foreground"
-          >
-            {deleting ? "Deleting..." : "Delete"}
-          </Button>
+
+          {/* Tabs — styled to match Shadcn TabsList */}
+          <div className="inline-flex h-9 items-center justify-center rounded-lg bg-muted p-1 text-muted-foreground">
+            {(["overview", "itinerary"] as const).map((tab) => (
+              <button
+                key={tab}
+                onClick={() => setActiveTab(tab)}
+                className={`inline-flex items-center justify-center whitespace-nowrap rounded-md px-4 py-1.5 text-sm font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 ${
+                  activeTab === tab
+                    ? "bg-background text-foreground shadow-sm"
+                    : "hover:text-foreground"
+                }`}
+              >
+                {tab === "overview" ? "Overview" : "Day by Day"}
+              </button>
+            ))}
+          </div>
+
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              className="font-mono text-xs"
+              onClick={() => {
+                setActiveTab("itinerary");
+                setTimeout(() => window.print(), 150);
+              }}
+            >
+              Print
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleDelete}
+              disabled={deleting}
+              className="text-xs text-destructive hover:bg-destructive hover:text-destructive-foreground"
+            >
+              {deleting ? "Deleting..." : "Delete"}
+            </Button>
+          </div>
         </div>
       </header>
 
-      {/* Summary bar */}
-      <div className="flex-shrink-0 border-b px-4 py-2">
+      {/* Summary bar — Overview only, hidden on print */}
+      <div className={`flex-shrink-0 border-b px-4 py-2 print:hidden ${activeTab !== "overview" ? "hidden" : ""}`}>
         {/* Row 1: title + status + vehicle */}
         <div className="flex flex-wrap items-center gap-2">
           <h1 className="text-lg font-bold leading-tight">{trip.title}</h1>
@@ -635,50 +636,45 @@ export default function TripPageClient() {
         </div>
 
         {/* Row 2: metrics */}
-        <div className="mt-1 flex flex-wrap items-center gap-x-4 gap-y-0.5 text-xs text-muted-foreground">
+        <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs text-muted-foreground">
           {(trip.start_date || trip.end_date) && (
-            <span>
-              {formatDate(trip.start_date)}
-              {trip.end_date && ` — ${formatDate(trip.end_date)}`}
-            </span>
+            <span>{formatDate(trip.start_date)}{trip.end_date && ` — ${formatDate(trip.end_date)}`}</span>
           )}
           {route && (
-            <>
-              <span>{formatDistance(route.totalDistance)}</span>
-              <span>{formatDuration(route.totalDuration)} driving</span>
-            </>
+            <span className="font-mono font-medium text-foreground">
+              {formatDistance(route.totalDistance)} · {formatDuration(route.totalDuration)}
+            </span>
           )}
-          <span>{sortedStops.length} stops</span>
-          {totalNights > 0 && (
-            <span>{totalNights} nights</span>
-          )}
-          {countriesCount > 0 && (
-            <span>{countriesCount} countries</span>
-          )}
-          <span
-            className={
-              bookingHealth.confirmed === bookingHealth.total && bookingHealth.total > 0
-                ? "font-medium text-green-700"
-                : bookingHealth.confirmed > 0
-                  ? "font-medium text-amber-700"
-                  : ""
-            }
-          >
-            {bookingHealth.confirmed}/{bookingHealth.total} confirmed
+          {totalNights > 0 && <span className="font-mono">{totalNights} nights</span>}
+          {countriesCount > 0 && <span>{countriesCount} countries</span>}
+          <span className={
+            bookingHealth.confirmed === bookingHealth.total && bookingHealth.total > 0
+              ? "font-mono font-semibold text-green-700"
+              : "font-mono font-semibold text-amber-700"
+          }>
+            {bookingHealth.confirmed}/{bookingHealth.total} booked
           </span>
           {totalEstimated != null && (
-            <span>~€{totalEstimated.toLocaleString("en-GB")} est.</span>
-          )}
-          {fuelEstimate && (
-            <span>
-              ~{fuelEstimate.litres}L fuel (~€{fuelEstimate.cost})
-            </span>
+            <span className="font-mono font-medium text-foreground">~€{totalEstimated.toLocaleString("en-GB")}</span>
           )}
         </div>
       </div>
 
-      {/* Two-panel layout: sidebar + map */}
-      <div className="flex flex-1 overflow-hidden">
+      {/* Day by Day view — shown when itinerary tab active, always on print */}
+      <div className={`flex-1 overflow-y-auto print:block ${activeTab !== "itinerary" ? "hidden print:block" : "block"}`}>
+        <DayByDayView
+          trip={trip}
+          sortedStops={sortedStops}
+          route={route}
+          totalNights={totalNights}
+          countriesCount={countriesCount}
+          totalStopCost={totalStopCost}
+          bookingHealth={bookingHealth}
+        />
+      </div>
+
+      {/* Two-panel layout: sidebar + map — Overview tab only, hidden on print */}
+      <div className={`flex flex-1 overflow-hidden print:hidden ${activeTab !== "overview" ? "hidden" : ""}`}>
         {/* Itinerary sidebar — desktop only */}
         <aside className="hidden w-[320px] flex-shrink-0 flex-col overflow-y-auto border-r md:flex">
           <div className="flex-1 pb-4">
