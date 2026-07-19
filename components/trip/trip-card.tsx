@@ -8,12 +8,13 @@ interface TripCardProps {
   trip: TripListItem;
 }
 
-const STATUS_COLOURS: Record<string, string> = {
-  planning: "bg-yellow-500/15 text-yellow-300 border border-yellow-500/20",
-  booked: "bg-blue-500/15 text-blue-300 border border-blue-500/20",
-  "in-progress": "bg-green-500/15 text-green-300 border border-green-500/20",
-  completed: "bg-zinc-500/15 text-zinc-300 border border-zinc-500/20",
-};
+function statusVariant(
+  status: string,
+): "booked" | "highlight" | "secondary" {
+  if (status === "booked") return "booked";
+  if (status === "in-progress") return "highlight";
+  return "secondary";
+}
 
 function formatDate(dateString: string): string {
   return new Date(dateString).toLocaleDateString("en-GB", {
@@ -38,11 +39,10 @@ export function TripCard({ trip }: TripCardProps) {
       <Card className="h-full transition-shadow hover:shadow-lg">
         <CardHeader className="pb-2">
           <div className="flex items-start justify-between gap-2">
-            <CardTitle className="line-clamp-1 text-lg">{trip.title}</CardTitle>
-            <Badge
-              className={STATUS_COLOURS[trip.status] || ""}
-              variant="secondary"
-            >
+            <CardTitle className="font-display line-clamp-1 text-lg tracking-tight">
+              {trip.title}
+            </CardTitle>
+            <Badge variant={statusVariant(trip.status)} className="capitalize">
               {trip.status}
             </Badge>
           </div>
@@ -60,7 +60,7 @@ export function TripCard({ trip }: TripCardProps) {
               <p className="text-xs">
                 {trip.vehicle.name}
                 {trip.vehicle.make && trip.vehicle.model && (
-                  <span className="text-muted-foreground/70">
+                  <span className="text-muted-foreground">
                     {" "}
                     • {trip.vehicle.make} {trip.vehicle.model}
                   </span>

@@ -8,6 +8,7 @@ export const MAP_STYLES = {
   satellite: 'mapbox://styles/mapbox/satellite-streets-v12',
 } as const
 
+// Tesla cockpit — monochrome dark canvas
 export const DEFAULT_MAP_STYLE = MAP_STYLES.dark
 
 // Centre of Europe for initial view

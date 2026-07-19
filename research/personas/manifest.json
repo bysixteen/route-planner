@@ -1,0 +1,55 @@
+{
+  "project": "Route Planner",
+  "description": "Personas for the Cork family road trip to the Hungarian GP 2026 (via Belgium, France, Germany, Austria, Hungary).",
+  "personas": [
+    {
+      "persona_id": "daniel-driver",
+      "name": "Daniel Cork",
+      "age": 38,
+      "role": "The Driver / Planner",
+      "context": "Plans the trip on a laptop the night before each leg, and glances at the app at motorway rest stops. Owns the route, the drive-time budget, and the bookings.",
+      "surface": "Desktop (planning), tablet/phone (rest stops)",
+      "goals": [
+        "Get a clear pre-drive briefing for the day: where we're going, how long, where to break",
+        "See at a glance whether a day's driving is within a comfortable limit (drive-health)",
+        "Print or save a one-page day route sheet to reference without signal",
+        "Scan the itinerary for any campsite that still isn't booked"
+      ],
+      "pain_points": [
+        "Notes get truncated in the sidebar so check-in details are cut off",
+        "Switching between the map and the sidebar to piece a day together is fiddly",
+        "Booking references are tiny, unselectable text"
+      ],
+      "quote": "Before we set off I just want the day on one screen — drive time, where we stop, and the campsite address.",
+      "ability_profile": {
+        "permanent": "None",
+        "temporary": "Tired after a long day's drive; reduced focus",
+        "situational": "Bright sunlight on the screen at a motorway services; glove-cold hands in winter"
+      }
+    },
+    {
+      "persona_id": "wife-navigator",
+      "name": "The Passenger / Navigator",
+      "age": 36,
+      "role": "The Navigator",
+      "context": "Navigates from a phone while Daniel drives. Needs the day's essentials to hand — the next campsite's address for the satnav and its booking confirmation.",
+      "surface": "Mobile (in-car, during the drive)",
+      "goals": [
+        "Copy the campsite coordinates straight into the satnav in one tap",
+        "Read out the booking confirmation number at check-in",
+        "Know the plan for today — what we're doing and where we're stopping",
+        "Check facilities (electric hook-up, showers, dog-friendly) before arrival"
+      ],
+      "pain_points": [
+        "On mobile the app currently shows only a map — no stop list, no details at all",
+        "No quick way to get an address into the satnav",
+        "Confirmation numbers are hard to find in a hurry"
+      ],
+      "quote": "Just tell me the next campsite's address and our booking number — I'll do the rest.",
+      "ability_profile": {
+        "permanent": "None",
+        "situational": "Motion sensitivity reading in a moving vehicle; one-handed phone use; patchy mobile signal across borders"
+      }
+    }
+  ]
+}

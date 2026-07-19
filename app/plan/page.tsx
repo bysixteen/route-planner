@@ -40,9 +40,6 @@ import {
   createEditorStop,
 } from "@/lib/types";
 import { createTrip } from "@/lib/supabase/queries";
-import { cn } from "@/lib/utils";
-
-type MobileView = "map" | "list";
 
 // Helper to format date for display
 function formatDateShort(date: Date): string {
@@ -90,7 +87,6 @@ export default function PlanPage() {
   const [activeInsertIndex, setActiveInsertIndex] = useState<number | null>(
     null,
   );
-  const [mobileView, setMobileView] = useState<MobileView>("list");
 
   // Home address state
   interface HomeAddress {
@@ -99,27 +95,37 @@ export default function PlanPage() {
     coordinates: [number, number];
     country?: string;
   }
+  const CANONICAL_HOME: HomeAddress = {
+    name: "16 Abelia Road",
+    fullName: "16 Abelia Road, Westhoughton, Bolton, BL5 2TB, United Kingdom",
+    coordinates: [-2.51434, 53.53734],
+    country: "United Kingdom",
+  };
+  const HOME_KEY = "routePlanner_homeAddress_v2";
   const [homeAddress, setHomeAddress] = useState<HomeAddress | null>(null);
   const [isSettingHome, setIsSettingHome] = useState(false);
 
-  // Load home address from localStorage on mount
+  // Load home address from localStorage on mount (v2 key ignores any stale v1 value)
   useEffect(() => {
-    const saved = localStorage.getItem("routePlanner_homeAddress");
+    const saved = localStorage.getItem(HOME_KEY);
     if (saved) {
       try {
         setHomeAddress(JSON.parse(saved));
+        return;
       } catch {
-        // Invalid JSON, ignore
+        // Invalid JSON, fall through to canonical
       }
     }
+    setHomeAddress(CANONICAL_HOME);
+    localStorage.setItem(HOME_KEY, JSON.stringify(CANONICAL_HOME));
   }, []);
 
   // Save home address to localStorage
   const saveHomeAddress = useCallback((address: HomeAddress) => {
     setHomeAddress(address);
-    localStorage.setItem("routePlanner_homeAddress", JSON.stringify(address));
+    localStorage.setItem(HOME_KEY, JSON.stringify(address));
     setIsSettingHome(false);
-  }, []);
+  }, [HOME_KEY]);
 
   // Start trip from home
   const handleStartFromHome = useCallback(() => {
@@ -392,27 +398,21 @@ export default function PlanPage() {
     <div className="flex h-screen flex-col bg-background">
       {/* Header */}
       <header className="shrink-0 border-b">
-        <div className="flex flex-col gap-2 px-4 py-2 sm:py-3 md:flex-row md:items-center md:justify-between">
-          {/* Title row */}
-          <div className="flex items-center gap-2 md:gap-4">
-            <Link
-              href="/"
-              className="inline-flex min-h-11 items-center text-lg font-bold hover:text-primary md:text-xl"
-              aria-label="Back to trips"
-            >
-              <span aria-hidden className="mr-1">←</span> Route Planner
+        <div className="flex items-center justify-between px-4 py-3">
+          <div className="flex items-center gap-4">
+            <Link href="/" className="text-xl font-bold hover:text-primary">
+              Route Planner
             </Link>
-            <Separator orientation="vertical" className="hidden h-6 md:block" />
+            <Separator orientation="vertical" className="h-6" />
             <Input
               value={tripTitle}
               onChange={(e) => setTripTitle(e.target.value)}
               aria-label="Trip title"
-              className="min-h-11 flex-1 border-none bg-transparent text-base font-semibold focus-visible:ring-1 md:w-64 md:flex-none md:text-lg"
+              className="w-64 border-none bg-transparent text-lg font-semibold focus-visible:ring-1"
             />
           </div>
-
-          {/* Actions row */}
-          <div className="flex flex-wrap items-center gap-2 md:gap-4">
+          <div className="flex items-center gap-4">
+            {/* Start date picker */}
             <div className="flex items-center gap-2">
               <Label
                 htmlFor="start-date"
@@ -425,19 +425,19 @@ export default function PlanPage() {
                 type="date"
                 value={startDate}
                 onChange={(e) => setStartDate(e.target.value)}
-                className="min-h-11 w-36 text-sm md:h-8 md:min-h-0"
+                className="w-36 h-8 text-sm"
               />
             </div>
-            <div className="ml-auto flex gap-2 md:ml-0">
+            <div className="flex gap-2">
               <Button
                 variant="outline"
+                size="sm"
                 onClick={handleSave}
                 disabled={isSaving || stops.length === 0}
-                className="min-h-11"
               >
                 {isSaving ? "Saving..." : "Save Trip"}
               </Button>
-              <Button disabled={stops.length < 2} className="min-h-11">
+              <Button size="sm" disabled={stops.length < 2}>
                 Export
               </Button>
             </div>
@@ -481,51 +481,10 @@ export default function PlanPage() {
         </div>
       )}
 
-      {/* Mobile view toggle */}
-      <div
-        role="tablist"
-        aria-label="View"
-        className="shrink-0 border-b px-4 py-2 md:hidden"
-      >
-        <div className="inline-flex rounded-md border bg-muted p-0.5">
-          <button
-            role="tab"
-            aria-selected={mobileView === "list"}
-            onClick={() => setMobileView("list")}
-            className={cn(
-              "min-h-9 rounded px-4 text-sm font-medium transition-colors",
-              mobileView === "list"
-                ? "bg-background shadow-sm"
-                : "text-muted-foreground",
-            )}
-          >
-            Itinerary
-          </button>
-          <button
-            role="tab"
-            aria-selected={mobileView === "map"}
-            onClick={() => setMobileView("map")}
-            className={cn(
-              "min-h-9 rounded px-4 text-sm font-medium transition-colors",
-              mobileView === "map"
-                ? "bg-background shadow-sm"
-                : "text-muted-foreground",
-            )}
-          >
-            Map
-          </button>
-        </div>
-      </div>
-
       {/* Main content */}
       <div className="flex flex-1 overflow-hidden">
         {/* Sidebar */}
-        <aside
-          className={cn(
-            "shrink-0 flex-col border-r bg-muted/30 md:flex md:w-96",
-            mobileView === "list" ? "flex w-full" : "hidden",
-          )}
-        >
+        <aside className="flex w-96 shrink-0 flex-col border-r bg-muted/30">
           {/* Header */}
           <div className="shrink-0 border-b p-4">
             <div className="flex items-center justify-between">
@@ -702,7 +661,7 @@ export default function PlanPage() {
                                   <div className="h-2 w-2 rounded-full border-2 border-muted-foreground/30" />
                                   <div className="h-2 w-0.5 bg-border" />
                                 </div>
-                                <div className="flex items-center gap-3 rounded-md bg-blue-500/10 px-2 py-1 text-xs text-blue-300">
+                                <div className="flex items-center gap-3 rounded-md bg-blue-50 px-2 py-1 text-xs text-blue-700">
                                   <span className="flex items-center gap-1">
                                     <svg
                                       className="h-3 w-3"
@@ -735,7 +694,7 @@ export default function PlanPage() {
                                     </svg>
                                     {formatDuration(day.arrivalDrive.duration)}
                                   </span>
-                                  <span className="text-blue-400/80">
+                                  <span className="text-blue-600">
                                     from overnight
                                   </span>
                                 </div>
@@ -818,7 +777,8 @@ export default function PlanPage() {
                                 <input
                                   type="text"
                                   placeholder="Add stop"
-                                  className="flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground/50"
+                                  aria-label="Add a stop"
+                                  className="flex-1 rounded bg-transparent text-sm outline-none placeholder:text-muted-foreground/50 focus-visible:ring-2 focus-visible:ring-ring"
                                   onFocus={() => {
                                     if (lastStopInDay) {
                                       setActiveInsertIndex(
@@ -842,12 +802,7 @@ export default function PlanPage() {
         </aside>
 
         {/* Map */}
-        <main
-          className={cn(
-            "flex-1 md:block",
-            mobileView === "map" ? "block" : "hidden",
-          )}
-        >
+        <main className="flex-1">
           <EditorMap
             stops={stops}
             selectedStopId={selectedStopId}

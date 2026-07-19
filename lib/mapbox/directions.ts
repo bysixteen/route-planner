@@ -97,10 +97,10 @@ export function formatDuration(seconds: number): string {
   const minutes = Math.round((seconds % 3600) / 60);
 
   if (hours === 0) {
-    return `${minutes} min`;
+    return `${minutes}m`;
   }
 
-  return minutes > 0 ? `${hours} hr ${minutes} min` : `${hours} hr`;
+  return minutes > 0 ? `${hours}h ${minutes}m` : `${hours}h`;
 }
 
 /**
