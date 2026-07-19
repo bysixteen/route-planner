@@ -8,7 +8,7 @@ export const MAP_STYLES = {
   satellite: 'mapbox://styles/mapbox/satellite-streets-v12',
 } as const
 
-export const DEFAULT_MAP_STYLE = MAP_STYLES.outdoors
+export const DEFAULT_MAP_STYLE = MAP_STYLES.dark
 
 // Centre of Europe for initial view
 export const DEFAULT_CENTER: [number, number] = [10.0, 50.0]

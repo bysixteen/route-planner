@@ -42,12 +42,12 @@ const STOP_TYPES: Array<{ value: EditorStop["type"]; label: string }> = [
 ];
 
 const TYPE_COLOURS: Record<string, string> = {
-  campsite: "bg-green-100 text-green-800 hover:bg-green-200",
-  city: "bg-blue-100 text-blue-800 hover:bg-blue-200",
-  attraction: "bg-amber-100 text-amber-800 hover:bg-amber-200",
-  rest: "bg-violet-100 text-violet-800 hover:bg-violet-200",
-  event: "bg-red-100 text-red-800 hover:bg-red-200",
-  transport: "bg-cyan-100 text-cyan-800 hover:bg-cyan-200",
+  campsite: "bg-green-500/15 text-green-300 hover:bg-green-500/25",
+  city: "bg-blue-500/15 text-blue-300 hover:bg-blue-500/25",
+  attraction: "bg-amber-500/15 text-amber-300 hover:bg-amber-500/25",
+  rest: "bg-violet-500/15 text-violet-300 hover:bg-violet-500/25",
+  event: "bg-red-500/15 text-red-300 hover:bg-red-500/25",
+  transport: "bg-cyan-500/15 text-cyan-300 hover:bg-cyan-500/25",
 };
 
 const DURATION_OPTIONS: Array<{
@@ -152,7 +152,7 @@ export function SortableStopItem({
 
         {/* Duration badge (click to cycle) */}
         <Badge
-          className="cursor-pointer bg-purple-100 text-purple-800 hover:bg-purple-200"
+          className="cursor-pointer bg-purple-500/15 text-purple-300 hover:bg-purple-500/25"
           variant="secondary"
           onClick={(e) => {
             e.stopPropagation();

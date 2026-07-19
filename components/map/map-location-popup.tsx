@@ -53,18 +53,18 @@ export function MapLocationPopup({
   };
 
   return (
-    <div className="w-72 rounded-lg bg-white p-4 shadow-xl">
+    <div className="w-72 rounded-lg border border-white/10 bg-card p-4 shadow-xl">
       {/* Header with close button */}
       <div className="mb-3 flex items-start justify-between">
         <div className="min-w-0 flex-1">
-          <h3 className="truncate font-semibold text-gray-900">
+          <h3 className="truncate font-semibold text-foreground">
             {location.name}
           </h3>
-          <p className="truncate text-sm text-gray-500">{location.fullName}</p>
+          <p className="truncate text-sm text-muted-foreground">{location.fullName}</p>
         </div>
         <button
           onClick={onClose}
-          className="ml-2 flex h-6 w-6 shrink-0 items-center justify-center rounded text-gray-400 hover:bg-gray-100 hover:text-gray-600"
+          className="ml-2 flex h-6 w-6 shrink-0 items-center justify-center rounded text-muted-foreground hover:bg-white/5 hover:text-foreground"
         >
           <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />

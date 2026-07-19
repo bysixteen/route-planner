@@ -25,10 +25,10 @@ interface TripListItem {
 }
 
 const STATUS_COLOURS: Record<string, string> = {
-  planning: "bg-yellow-100 text-yellow-800",
-  booked: "bg-blue-100 text-blue-800",
-  "in-progress": "bg-green-100 text-green-800",
-  completed: "bg-gray-100 text-gray-800",
+  planning: "bg-yellow-500/15 text-yellow-300 border border-yellow-500/20",
+  booked: "bg-blue-500/15 text-blue-300 border border-blue-500/20",
+  "in-progress": "bg-green-500/15 text-green-300 border border-green-500/20",
+  completed: "bg-zinc-500/15 text-zinc-300 border border-zinc-500/20",
 };
 
 function formatDate(dateString: string): string {
@@ -138,7 +138,7 @@ export default function HomePage() {
         </div>
 
         {error ? (
-          <div className="rounded-lg border border-red-200 bg-red-50 p-6 text-center text-red-700">
+          <div className="rounded-lg border border-red-500/25 bg-red-500/10 p-6 text-center text-red-300">
             {error}
           </div>
         ) : loading ? (

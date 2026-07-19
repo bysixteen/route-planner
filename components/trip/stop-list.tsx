@@ -27,12 +27,12 @@ const STOP_TYPE_LABELS: Record<string, string> = {
 };
 
 const STOP_TYPE_COLOURS: Record<string, string> = {
-  campsite: "bg-green-100 text-green-800",
-  city: "bg-blue-100 text-blue-800",
-  attraction: "bg-amber-100 text-amber-800",
-  rest: "bg-violet-100 text-violet-800",
-  event: "bg-red-100 text-red-800",
-  transport: "bg-cyan-100 text-cyan-800",
+  campsite: "bg-green-500/15 text-green-300",
+  city: "bg-blue-500/15 text-blue-300",
+  attraction: "bg-amber-500/15 text-amber-300",
+  rest: "bg-violet-500/15 text-violet-300",
+  event: "bg-red-500/15 text-red-300",
+  transport: "bg-cyan-500/15 text-cyan-300",
 };
 
 function formatDate(dateString?: string): string {
@@ -62,7 +62,7 @@ export function StopList({
             {/* Segment info between stops */}
             {index > 0 && segment && (
               <div className="mb-4 flex items-center gap-2 py-2 pl-4">
-                <div className="h-8 w-0.5 bg-blue-200" />
+                <div className="h-8 w-0.5 bg-blue-500/30" />
                 <div
                   className={`flex gap-3 text-sm ${isOverLimit ? "text-red-600 font-medium" : "text-muted-foreground"}`}
                 >

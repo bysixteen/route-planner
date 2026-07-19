@@ -27,11 +27,11 @@ type MobileView = "map" | "list";
 type MetricTone = "default" | "success" | "warning" | "danger" | "muted";
 
 const TILE_TONE: Record<MetricTone, string> = {
-  default: "bg-background border-border text-foreground",
-  success: "bg-green-50 border-green-200 text-green-900",
-  warning: "bg-amber-50 border-amber-200 text-amber-900",
-  danger: "bg-red-50 border-red-200 text-red-900",
-  muted: "bg-muted border-border text-muted-foreground",
+  default: "bg-white/[0.03] border-white/10 text-foreground",
+  success: "bg-green-500/10 border-green-500/25 text-green-300",
+  warning: "bg-amber-500/10 border-amber-500/25 text-amber-300",
+  danger: "bg-red-500/10 border-red-500/25 text-red-300",
+  muted: "bg-white/[0.02] border-white/5 text-muted-foreground",
 };
 
 function MetricTile({
@@ -148,24 +148,24 @@ interface DayGroup {
 // ---------------------------------------------------------------------------
 
 const STATUS_COLOURS: Record<string, string> = {
-  planning: "bg-yellow-100 text-yellow-800",
-  booked: "bg-blue-100 text-blue-800",
-  "in-progress": "bg-green-100 text-green-800",
-  completed: "bg-gray-100 text-gray-800",
+  planning: "bg-yellow-500/15 text-yellow-300 border border-yellow-500/20",
+  booked: "bg-blue-500/15 text-blue-300 border border-blue-500/20",
+  "in-progress": "bg-green-500/15 text-green-300 border border-green-500/20",
+  completed: "bg-zinc-500/15 text-zinc-300 border border-zinc-500/20",
 };
 
 const TYPE_COLOURS: Record<string, string> = {
-  campsite: "bg-green-100 text-green-800",
-  city: "bg-blue-100 text-blue-800",
-  attraction: "bg-amber-100 text-amber-800",
-  rest: "bg-violet-100 text-violet-800",
-  event: "bg-red-100 text-red-800",
-  transport: "bg-cyan-100 text-cyan-800",
+  campsite: "bg-green-500/15 text-green-300",
+  city: "bg-blue-500/15 text-blue-300",
+  attraction: "bg-amber-500/15 text-amber-300",
+  rest: "bg-violet-500/15 text-violet-300",
+  event: "bg-red-500/15 text-red-300",
+  transport: "bg-cyan-500/15 text-cyan-300",
 };
 
 const BOOKING_COLOURS: Record<string, string> = {
-  confirmed: "bg-green-100 text-green-800",
-  pending: "bg-amber-100 text-amber-800",
+  confirmed: "bg-green-500/20 text-green-300 border border-green-500/30",
+  pending: "bg-amber-500/20 text-amber-300 border border-amber-500/30",
 };
 
 const SEGMENT_HEALTH_COLOURS: Record<string, string> = {
@@ -493,23 +493,23 @@ export default function TripPageClient() {
       return (
         <div
           key={stop.id}
-          className="flex min-h-11 cursor-pointer items-center gap-2 rounded-md border border-dashed border-amber-300 bg-amber-50 px-3 py-2 transition-colors hover:bg-amber-100 dark:border-amber-700 dark:bg-amber-950/30 dark:hover:bg-amber-950/50"
+          className="flex min-h-11 cursor-pointer items-center gap-2 rounded-md border border-dashed border-amber-500/40 bg-amber-500/10 px-3 py-2 transition-colors hover:bg-amber-500/20"
           onClick={() => handleStopClick(globalIndex)}
         >
           <div className="flex h-4 w-4 shrink-0 items-center justify-center rounded-sm bg-amber-500 rotate-45">
             <span className="sr-only">waypoint</span>
           </div>
           <div className="min-w-0 flex-1">
-            <span className="text-xs font-medium text-amber-800 dark:text-amber-300">
+            <span className="text-xs font-medium text-amber-300">
               {stop.name}
             </span>
             {stop.notes && (
-              <span className="ml-1.5 text-[11px] text-amber-600/80 dark:text-amber-400/70">
+              <span className="ml-1.5 text-[11px] text-amber-400/70">
                 — {stop.notes.split('.')[0]}
               </span>
             )}
           </div>
-          <Badge className="bg-amber-200 text-amber-800 text-[9px] dark:bg-amber-800 dark:text-amber-200" variant="secondary">
+          <Badge className="bg-amber-500/25 text-amber-200 text-[9px]" variant="secondary">
             waypoint
           </Badge>
         </div>
@@ -700,8 +700,8 @@ export default function TripPageClient() {
             <Badge
               className={
                 daysUntil != null && daysUntil <= 7
-                  ? "bg-red-100 text-red-800"
-                  : "bg-blue-100 text-blue-800"
+                  ? "bg-red-500/15 text-red-300 border border-red-500/25"
+                  : "bg-blue-500/15 text-blue-300 border border-blue-500/25"
               }
               variant="secondary"
             >

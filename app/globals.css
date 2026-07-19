@@ -46,39 +46,45 @@
   --radius-4xl: calc(var(--radius) + 16px);
 }
 
+/*
+ * Tesla in-car inspired palette — near-black base, off-white type,
+ * subtle borders. Status colours retain their meaning (green/amber/red)
+ * but rendered as translucent overlays over the dark surface so they
+ * feel like dashboard cluster indicators, not web chips.
+ */
 :root {
   --radius: 0.625rem;
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.145 0 0);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.145 0 0);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.205 0 0);
-  --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.97 0 0);
-  --secondary-foreground: oklch(0.205 0 0);
-  --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.556 0 0);
-  --accent: oklch(0.97 0 0);
-  --accent-foreground: oklch(0.205 0 0);
-  --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.922 0 0);
-  --input: oklch(0.922 0 0);
-  --ring: oklch(0.708 0 0);
-  --chart-1: oklch(0.646 0.222 41.116);
-  --chart-2: oklch(0.6 0.118 184.704);
-  --chart-3: oklch(0.398 0.07 227.392);
-  --chart-4: oklch(0.828 0.189 84.429);
-  --chart-5: oklch(0.769 0.188 70.08);
-  --sidebar: oklch(0.985 0 0);
-  --sidebar-foreground: oklch(0.145 0 0);
-  --sidebar-primary: oklch(0.205 0 0);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.97 0 0);
-  --sidebar-accent-foreground: oklch(0.205 0 0);
-  --sidebar-border: oklch(0.922 0 0);
-  --sidebar-ring: oklch(0.708 0 0);
+  --background: oklch(0.145 0 0);       /* Tesla near-black */
+  --foreground: oklch(0.97 0 0);        /* Off-white */
+  --card: oklch(0.19 0 0);              /* Slightly raised surface */
+  --card-foreground: oklch(0.97 0 0);
+  --popover: oklch(0.205 0 0);
+  --popover-foreground: oklch(0.97 0 0);
+  --primary: oklch(0.97 0 0);           /* Bright text on dark buttons */
+  --primary-foreground: oklch(0.145 0 0);
+  --secondary: oklch(0.24 0 0);
+  --secondary-foreground: oklch(0.97 0 0);
+  --muted: oklch(0.22 0 0);
+  --muted-foreground: oklch(0.65 0 0);  /* Dimmed labels */
+  --accent: oklch(0.28 0 0);
+  --accent-foreground: oklch(0.97 0 0);
+  --destructive: oklch(0.62 0.22 25);   /* Tesla red */
+  --border: oklch(1 0 0 / 8%);          /* Barely-there dividers */
+  --input: oklch(1 0 0 / 12%);
+  --ring: oklch(0.55 0 0);
+  --chart-1: oklch(0.72 0.18 145);      /* Confirmed green */
+  --chart-2: oklch(0.78 0.16 80);       /* Amber */
+  --chart-3: oklch(0.62 0.22 25);       /* Red */
+  --chart-4: oklch(0.68 0.16 220);      /* Info blue */
+  --chart-5: oklch(0.72 0.14 300);      /* Violet */
+  --sidebar: oklch(0.17 0 0);
+  --sidebar-foreground: oklch(0.97 0 0);
+  --sidebar-primary: oklch(0.97 0 0);
+  --sidebar-primary-foreground: oklch(0.145 0 0);
+  --sidebar-accent: oklch(0.24 0 0);
+  --sidebar-accent-foreground: oklch(0.97 0 0);
+  --sidebar-border: oklch(1 0 0 / 8%);
+  --sidebar-ring: oklch(0.55 0 0);
 }
 
 .dark {
@@ -124,19 +130,38 @@
   }
 }
 
-/* Mapbox popup styling */
-.map-location-popup .mapboxgl-popup-content {
-  padding: 0;
-  border-radius: 0.5rem;
-  box-shadow: 0 10px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+/* Mapbox popup — dark Tesla styling */
+.mapboxgl-popup-content {
+  background: oklch(0.19 0 0) !important;
+  color: oklch(0.97 0 0) !important;
+  border: 1px solid oklch(1 0 0 / 8%) !important;
+  border-radius: 0.5rem !important;
+  padding: 0 !important;
+  box-shadow: 0 10px 25px -5px rgb(0 0 0 / 0.5), 0 8px 10px -6px rgb(0 0 0 / 0.4) !important;
 }
 
-.map-location-popup .mapboxgl-popup-tip {
-  border-top-color: white;
+.mapboxgl-popup-tip {
+  border-top-color: oklch(0.19 0 0) !important;
+  border-bottom-color: oklch(0.19 0 0) !important;
 }
 
 .mapboxgl-popup-close-button {
   display: none;
+}
+
+/* Mapbox navigation controls — dark treatment */
+.mapboxgl-ctrl-group {
+  background: oklch(0.19 0 0) !important;
+  border: 1px solid oklch(1 0 0 / 8%) !important;
+}
+.mapboxgl-ctrl-group button {
+  background-color: transparent !important;
+}
+.mapboxgl-ctrl-group button + button {
+  border-top: 1px solid oklch(1 0 0 / 8%) !important;
+}
+.mapboxgl-ctrl-group button span {
+  filter: invert(1) brightness(1.5);
 }
 
 /* Hide scrollbar on horizontally scrolling metric tile row */

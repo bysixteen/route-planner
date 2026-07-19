@@ -189,9 +189,9 @@ export const TripMap = forwardRef<TripMapHandle, TripMapProps>(function TripMap(
         <div style="padding: 8px;">
           <strong>${stop.name}</strong>
           ${waypointLabel}
-          ${stop.country ? `<br><span style="color: #666;">${stop.country}</span>` : ""}
-          ${!isWaypoint && stop.nights ? `<br><span style="color: #666;">${stop.nights} night${stop.nights > 1 ? "s" : ""}</span>` : ""}
-          ${stop.notes ? `<br><span style="color: #888; font-size: 11px;">${stop.notes.split('.')[0]}</span>` : ""}
+          ${stop.country ? `<br><span style="color: #a1a1aa;">${stop.country}</span>` : ""}
+          ${!isWaypoint && stop.nights ? `<br><span style="color: #a1a1aa;">${stop.nights} night${stop.nights > 1 ? "s" : ""}</span>` : ""}
+          ${stop.notes ? `<br><span style="color: #71717a; font-size: 11px;">${stop.notes.split('.')[0]}</span>` : ""}
         </div>
       `);
 
@@ -251,7 +251,7 @@ export const TripMap = forwardRef<TripMapHandle, TripMapProps>(function TripMap(
         const popup = new mapboxgl.Popup({ offset: 15, closeButton: true }).setHTML(`
           <div style="padding: 8px; max-width: 220px;">
             <strong>${opt.name}</strong>${bookedBadge}${recBadge}
-            <br><span style="color: #666; font-size: 12px;">For: ${opt.stop}</span>
+            <br><span style="color: #a1a1aa; font-size: 12px;">For: ${opt.stop}</span>
             <br><span style="color: #8b5cf6; font-size: 12px;">${opt.rating} · ${opt.price}</span>${bookingRefLine}
             <br><a href="${opt.url}" target="_blank" style="color: #3b82f6; font-size: 11px;">Website →</a>
           </div>
@@ -288,8 +288,8 @@ export const TripMap = forwardRef<TripMapHandle, TripMapProps>(function TripMap(
           marker.getPopup()?.setHTML(`
             <div style="padding: 8px;">
               <strong>${stop.name}</strong>
-              ${stop.country ? `<br><span style="color: #666;">${stop.country}</span>` : ""}
-              ${stop.nights ? `<br><span style="color: #666;">${stop.nights} night${stop.nights > 1 ? "s" : ""}</span>` : ""}
+              ${stop.country ? `<br><span style="color: #a1a1aa;">${stop.country}</span>` : ""}
+              ${stop.nights ? `<br><span style="color: #a1a1aa;">${stop.nights} night${stop.nights > 1 ? "s" : ""}</span>` : ""}
               <br><span style="color: ${HEALTH_COLOURS[health]}; font-size: 12px;">→ ${nextStop.name}: ${formatDuration(segment.duration)} · ${formatDistance(segment.distance)}</span>
             </div>
           `);

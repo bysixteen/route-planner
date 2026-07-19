@@ -702,7 +702,7 @@ export default function PlanPage() {
                                   <div className="h-2 w-2 rounded-full border-2 border-muted-foreground/30" />
                                   <div className="h-2 w-0.5 bg-border" />
                                 </div>
-                                <div className="flex items-center gap-3 rounded-md bg-blue-50 px-2 py-1 text-xs text-blue-700">
+                                <div className="flex items-center gap-3 rounded-md bg-blue-500/10 px-2 py-1 text-xs text-blue-300">
                                   <span className="flex items-center gap-1">
                                     <svg
                                       className="h-3 w-3"
@@ -735,7 +735,7 @@ export default function PlanPage() {
                                     </svg>
                                     {formatDuration(day.arrivalDrive.duration)}
                                   </span>
-                                  <span className="text-blue-600">
+                                  <span className="text-blue-400/80">
                                     from overnight
                                   </span>
                                 </div>
