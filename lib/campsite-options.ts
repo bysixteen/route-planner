@@ -17,7 +17,11 @@ export interface CampsiteOption {
   bookingRef?: string;
 }
 
-export const CAMPSITE_OPTIONS: CampsiteOption[] = [
+export const CAMPSITE_OPTIONS: CampsiteOption[] = [];
+
+// All stops are now confirmed and booked — campsite option pins removed.
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+const _LEGACY_OPTIONS: CampsiteOption[] = [
   // ── Stop: Swabian Alb (21 Jul) — 10 options, broadened west ──
   // Black Forest
   {
@@ -236,11 +240,13 @@ export const CAMPSITE_OPTIONS: CampsiteOption[] = [
   {
     stop: "Wachau",
     id: "W6",
-    name: "Campingplatz Melk",
+    name: "Campingplatz der Stadt Melk",
     coords: [15.3277, 48.2324],
     rating: "3.5/5",
     price: "€30/nt",
     url: "https://www.visitmelk.com/en/melk-besuchen/unterbringung/campingplatz",
+    booked: true,
+    bookingRef: "Stellplatz 8",
   },
   {
     stop: "Wachau",
